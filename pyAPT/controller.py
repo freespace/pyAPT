@@ -4,9 +4,13 @@ Simple class which encapsulate an APT controller
 import pylibftdi
 import time
 
-class APTController(object):
+from message import Message, MGMSG_MOD_IDENTIFY
+
+pylibftdi.USB_PID_LIST+=[0xfaf0]
+
+class Controller(object):
   def __init__(self, serial_number=None, label=None):
-    super(object, self).__init__()
+    super(Controller, self).__init__()
 
     dev = pylibftdi.Device(mode='b', device_id=serial_number)
     dev.baudrate = 115200
@@ -42,6 +46,6 @@ class APTController(object):
     """
     Flashes the controller's activity LED
     """
-    idmsg = APTMessage.Message(APTMessage.MGMSG_MOD_IDENTIFY)
+    idmsg = Message(MGMSG_MOD_IDENTIFY)
     self._device.write(idmsg.pack())
 

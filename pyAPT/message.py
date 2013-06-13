@@ -112,6 +112,5 @@ def pack_unpack_test():
   b = Message.unpack(s)
   assert a == b
 
-
 # Constants
 MGMSG_MOD_IDENTIFY = 0x0223
