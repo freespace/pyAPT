@@ -1,9 +1,13 @@
 #!/usr/bin/env python
+"""
+Usage: python home.py [<serial>]
+
+This program homes all APT controllers found, or the one specified
+"""
 
 import time
 import pylibftdi
 import pyAPT
-
 
 def main(args):
   print 'Looking for APT controllers'

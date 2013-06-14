@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+"""
+Usage: python identify.py
 
+Finds all APT controllers and flashes their activity lights
+"""
 import time
 import pylibftdi
 import pyAPT
-
 
 def main(args):
   print 'Looking for APT controllers'
