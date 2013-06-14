@@ -44,18 +44,27 @@ class Controller(object):
     self.label = label
     self._device = dev
 
-    # some sane limits
+    # some sane limits, mostly based on the MTS50/M-Z8
     # velocity is in mm/s
     # acceleration is in mm^2/s
-    self._max_velocity = 3
-    self._max_acceleration = 4
+    self.max_velocity = 3
+    self.max_acceleration = 4
 
     # these define how encode count translates into position, velocity
     # and acceleration. e.g. 1 encoder count is equal to 
-    # 1 * self._position_scale mm 
-    self._velocity_scale = 767367.49
-    self._position_scale = 34304
-    self._acceleration_scale = 261.93
+    # 1 * self.position_scale mm 
+    self.velocity_scale = 767367.49
+    self.position_scale = 34304
+    self.acceleration_scale = 261.93
+
+    # defines the linear, i.e. distance, range of the controller
+    # unit is in mm
+    self.linear_range = (0,50)
+
+    # the message queue are messages that are sent asynchronously. For example
+    # if we performed a move, and are waiting for move completed message,
+    # any other message received in the mean time are place in the queue.
+    self.message_queue = []
 
   def __enter__(self):
     return self
@@ -89,6 +98,25 @@ class Controller(object):
 
     return data
 
+  def _read_message(self):
+    data = self._read(message.MGMSG_HEADER_SIZE)
+    msg = Message.unpack(data, header_only=header_only)
+    if msg.hasdata:
+      data = self._read(msg.datalength)
+      msglist = list(msg)
+      msglist[-1] = data
+      return Message._make(msglist)
+    return msg
+
+  def _wait_message(self, expected_messageID):
+    m = None
+    while m and m.messageID != expected_messageID:
+      m = self._read_message()
+      if m.messageID != expected_messageID:
+        self.message_queue.append(m)
+      else:
+        return m
+
   def identify(self):
     """
     Flashes the controller's activity LED
@@ -104,9 +132,9 @@ class Controller(object):
     reqmsg = Message(message.MGMSG_MOT_REQ_HOMEPARAMS)
     self._send_message(reqmsg)
 
-    data = self._read(20)
-    getmsg = Message.unpack(data)
-    bstr = ''.join(chr(x) for x in getmsg.data)
+    getmsg = self._wait_message(message.MGMSG_MOT_GET_HOMEPARAMS)
+    dstr = getmsg.datastring
+
     """
     <: little endian
     H: 2 bytes for channel id
@@ -115,18 +143,16 @@ class Controller(object):
     I: 4 bytes for homing velocity
     I: 4 bytes for offset distance
     """
-    return st.unpack('<HHHII', bstr) 
+    return st.unpack('<HHHII', dstr)
 
   def home(self, wait=True, velocity=0):
     """
-    When wait is true, this method doesn't return until MGMSG_MOT_MOVE_HOMED
-    is received. Otherwise it returns immediately after having sent the
-    message.
-
     When velocity is not 0, homing parameters will be set so homing velocity
     will be as given, in mm per second.
 
-    Note that this only supports single channel homing at the moment
+    When wait is true, this method doesn't return until MGMSG_MOT_MOVE_HOMED
+    is received. Otherwise it returns immediately after having sent the
+    message.
     """
 
     if velocity > 0:
@@ -144,7 +170,7 @@ class Controller(object):
       curparams = list(self.request_home_params())
 
       # make sure we never exceed the limits of our stage
-      velocity = min(self._max_velocity, velocity)
+      velocity = min(self.max_velocity, velocity)
 
       """
       <: little endian
@@ -155,7 +181,7 @@ class Controller(object):
       I: 4 bytes for offset distance
       """
 
-      curparams[-2] = int(velocity*self._velocity_scale)
+      curparams[-2] = int(velocity*self.velocity_scale)
       newparams= st.pack( '<HHHII',*curparams)
 
       homeparamsmsg = Message(message.MGMSG_MOT_SET_HOMEPARAMS, data=newparams)
@@ -165,13 +191,54 @@ class Controller(object):
     self._send_message(homemsg)
 
     if wait:
-      while True:
-        data = self._read(6)
-        m = Message.unpack(data, header_only=True)
-        if m.messageID == message.MGMSG_MOT_MOVE_HOMED:
-          break
-        else:
-          print "Got message 0x%x while homing"%(m.messageID)
+      m = self._wait_message(message.MGMSG_MOT_MOVE_HOMED)
+
+  def position(self, channel=0):
+    reqmsg = Message(message.MGMSG_MOT_REQ_POSCOUNTER, param1=channel)
+    self._send_message(reqmsg)
+
+    getmsg = self._wait_message(message.MGMSG_MOT_GET_POSCOUNTER)
+    dstr = getmsg.datastring
+
+    """
+    <: little endian
+    H: 2 bytes for channel id
+    I: 4 bytes for position
+    """
+    chanid,pos_apt=st.unpack('<HHHII', dstr)
+
+    # convert position from POS_apt to POS using _position_scale
+    return pos_apt / self.position_scale
+
+  def set_position(self, abs_pos_mm, channel=0, wait=True):
+    """
+    This does NOT set the position counter!! This moves the stage to the
+    ABSOLUTE position given, which is in mm.
+
+    abs_pos_mm will be clamped to self.linear_range
+
+    When wait is True, this method only returns when the stage has signaled
+    that it has finished moving.
+    """
+
+    # do some software limiting for extra safety
+    abs_pos_mm = min(abs_pos_mm, self.linear_range[1])
+    abs_pos_mm = max(abs_pos_mm, self.linear_range[0])
+
+    abs_pos_apt = abs_pos_mm * self.position_scale
+
+    """
+    <: little endian
+    H: 2 bytes for channel id
+    I: 4 bytes for absolute position
+    """
+    params = st.pack( '<HI', channel, abs_pos_apt)
+
+    movemsg = Message(message.MGMSG_MOT_MOVE_ABSOLUTE,data=params)
+    self._send_message(movemsg)
+
+    if wait:
+      msg = self._wait_message(message.MGMSG_MOT_MOVE_COMPLETED)
 
 class MTS50Controller(Controller):
   """
@@ -181,10 +248,12 @@ class MTS50Controller(Controller):
     super(MTS50Controller, self).__init__(*args, **kwargs)
 
     # http://www.thorlabs.co.uk/thorProduct.cfm?partNumber=MTS50/M-Z8
-    self._max_velocity = 3
-    self._max_acceleration = 4.5
+    self.max_velocity = 3
+    self.max_acceleration = 4.5
 
-    self._position_scale = 34304
-    self._velocity_scale = 767367.49
-    self._acceleration_scale = 261.93
+    self.position_scale = 34304
+    self.velocity_scale = 767367.49
+    self.acceleration_scale = 261.93
+
+    self.linear_range = (0,50)
 
