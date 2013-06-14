@@ -12,9 +12,16 @@ def main(args):
 
   if controllers:
     for con in controllers:
-      print '\tIdentifying %s %s S/N: %s'%con
+      print 'Found %s %s S/N: %s'%con
       with pyAPT.Controller(serial_number=con[2]) as con:
+        print '\tIdentifying controller'
         con.identify()
+        print '\tResetting controller parameters'
+        con.reset_params()
+        print '\tHoming parameters:', con.request_home_params()
+        print '\tHoming stage...',
+        con.home(velocity=1)
+        print 'homed'
 
       return 0
   else:
