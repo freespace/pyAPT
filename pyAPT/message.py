@@ -14,6 +14,17 @@ _Message = namedtuple(
 class Message(_Message):
   @classmethod
   def unpack(cls, databytes, header_only=False):
+    """
+    pack() produces a string of bytes from a Message, pack() produces a
+    Message from a string of bytes
+
+    If header_only is True, then we will only attempt to decode the header,
+    ignoring any bytes that follow, if any. This allows you get determine
+    what the message is without having to read it in its entirety.
+
+    Note that dest is returned AS IS, which means its MSB will be set if the
+    message is more than just a header
+    """
     Header = namedtuple('Header', ['messageID', 'param1', 'param2', 'dest','src'])
     hd = Header._make(st.unpack('<HBBBB',databytes[:6]))
 
@@ -27,9 +38,7 @@ class Message(_Message):
         data=st.unpack('<%dB'%(datalen), databytes[6:])
 
       return Message( hd.messageID,
-                      # remember to undo the 0x80 which indicates data to
-                      # follow
-                      dest = hd.dest^0x80,
+                      dest = hd.dest,
                       src = hd.src,
                       data = data)
     else:
@@ -113,6 +122,25 @@ class Message(_Message):
     """
     return self.pack() == other.pack()
 
+  @property
+  def datastring(self):
+    return ''.join(chr(x) for x in self.data)
+
+  @property
+  def datalength(self):
+    if self.hasdata:
+      if data:
+        return len(data)
+      else:
+        return = self.param1 | (self.param2<<8)
+    else:
+      return -1
+
+  @property
+  def hasdata(self):
+    return self.dest & 0x80
+
+
 def pack_unpack_test():
   """
   If we pack a message, then unpack it, we should recover the message exactly.
@@ -122,6 +150,8 @@ def pack_unpack_test():
   b = Message.unpack(s)
   assert a == b
 
+MGMSG_HEADER_SIZE = 6
+
 # Generic Commands
 MGMSG_MOD_IDENTIFY = 0x0223
 MGMSG_HW_RESPONSE = 0x0080
@@ -130,7 +160,13 @@ MGMSG_MOT_SET_PZSTAGEPARAMDEFAULTS = 0x0686
 # Motor Commands
 MGMSG_MOT_MOVE_HOME = 0x0443
 MGMSG_MOT_MOVE_HOMED = 0x0444
+MGMSG_MOT_MOVE_ABSOLUTE = 0x0453
+MGMSG_MOT_MOVE_COMPLETED = 0x0464
+
 MGMSG_MOT_SET_HOMEPARAMS = 0x0440
 MGMSG_MOT_REQ_HOMEPARAMS = 0x0441
 MGMSG_MOT_GET_HOMEPARAMS = 0x0442
+
+MGMSG_MOT_REQ_POSCOUNTER = 0x0411
+MGMSG_MOT_GET_POSCOUNTER = 0x0412
 
