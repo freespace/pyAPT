@@ -13,17 +13,23 @@ _Message = namedtuple(
 
 class Message(_Message):
   @classmethod
-  def unpack(cls, databytes):
+  def unpack(cls, databytes, header_only=False):
     Header = namedtuple('Header', ['messageID', 'param1', 'param2', 'dest','src'])
     hd = Header._make(st.unpack('<HBBBB',databytes[:6]))
 
     # if MSB of dest is set, then there is additional data to follow
     if hd.dest & 0x80:
       datalen = hd.param1 | (hd.param2<<8)
-      data=st.unpack('<%dB'%(datalen), databytes[6:])
+
+      if header_only:
+        data=None
+      else:
+        data=st.unpack('<%dB'%(datalen), databytes[6:])
 
       return Message( hd.messageID,
-                      dest = hd.dest,
+                      # remember to undo the 0x80 which indicates data to
+                      # follow
+                      dest = hd.dest^0x80,
                       src = hd.src,
                       data = data)
     else:
@@ -37,7 +43,11 @@ class Message(_Message):
     assert(type(messageID) == int)
     if data:
       assert(param1 == 0 and param2 == 0)
-      assert(type(data) in [list, tuple])
+      assert(type(data) in [list, tuple, str])
+
+      if type(data) == str:
+        data = [ord(c) for c in data]
+
       return super(Message, self).__new__(Message,
                                           messageID,
                                           None,
@@ -112,5 +122,15 @@ def pack_unpack_test():
   b = Message.unpack(s)
   assert a == b
 
-# Constants
+# Generic Commands
 MGMSG_MOD_IDENTIFY = 0x0223
+MGMSG_HW_RESPONSE = 0x0080
+MGMSG_MOT_SET_PZSTAGEPARAMDEFAULTS = 0x0686
+
+# Motor Commands
+MGMSG_MOT_MOVE_HOME = 0x0443
+MGMSG_MOT_MOVE_HOMED = 0x0444
+MGMSG_MOT_SET_HOMEPARAMS = 0x0440
+MGMSG_MOT_REQ_HOMEPARAMS = 0x0441
+MGMSG_MOT_GET_HOMEPARAMS = 0x0442
+
