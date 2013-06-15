@@ -230,6 +230,10 @@ class Controller(object):
 
     When wait is True, this method only returns when the stage has signaled
     that it has finished moving.
+
+    Note that the wait is implemented by waiting for MGMSG_MOT_MOVE_COMPLETED,
+    then querying status until the position returned matches the requested
+    position, and velocity is zero
     """
 
     # do some software limiting for extra safety
@@ -250,7 +254,11 @@ class Controller(object):
 
     if wait:
       msg = self._wait_message(message.MGMSG_MOT_MOVE_COMPLETED)
-      return ControllerStatus(self, msg.datastring)
+      sts = ControllerStatus(self, msg.datastring)
+      while sts.velocity_apt or sts.position_apt != abs_pos_apt:
+        time.sleep(0.001)
+        sts = self.status()
+      return sts
     else:
       return None
 
@@ -310,9 +318,15 @@ class ControllerStatus(object):
     self.channel = channel
     self.position = pos_apt / controller.position_scale
 
-    # XXX the documentation is explicit about the scaling used here
-    self.velocity = vel_apt * 204.8
+    # XXX the protocol document, revision 7, is explicit about the scaling
+    # used here, but experiments show that it is wrong.
+    self.velocity = vel_apt / controller.velocity_scale
     self.statusbits = statusbits
+
+    # save the "raw" controller values since they are convenient for
+    # zero-checking
+    self.position_apt = pos_apt
+    self.velocity_apt = vel_apt
 
   @property
   def forward_hardware_limit_switch_active(self):
