@@ -240,6 +240,30 @@ class Controller(object):
     if wait:
       msg = self._wait_message(message.MGMSG_MOT_MOVE_COMPLETED)
 
+  def move(self, dist_mm, channel=0, wait=True):
+    """
+    Tells the stage to move from its current position the specified
+    distance, in mm
+    """
+    curpos = self.position()
+    newpos = curpos + dist_mm
+
+    # like move, we to software limiting for safety
+    newpos = min(newpos, self.linear_range[1])
+    newpos = max(newpos, self.linear_range[0])
+
+    # We could implement MGMSG_MOT_MOVE_RELATIVE, or we can use goto again
+    # because we calculate the new absolute position anyway.
+    #
+    # The advantage of implementing MGMSG_MOT_MOVE_RELATIVE is that things
+    # will be a little faster, because we don't need to get the current
+    # position first. The advantage of reusing self.goto is that it is easier
+    # to implement initially.
+    #
+    # Of course by the time I have finished writing this comment, I could have
+    # just implemented MGMSG_MOT_MOVE_RELATIVE.
+    self.goto(newpos, channel=channel, wait=wait)
+
 class MTS50Controller(Controller):
   """
   A controller for a MTS50/M-Z8 stage.
