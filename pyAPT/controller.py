@@ -118,6 +118,57 @@ class Controller(object):
       else:
         self.message_queue.append(m)
 
+  def _decode_status(self,statusbits):
+    """
+    Decodes the statusbits returned by the controller as part of move completed
+    and other messages. Returns a list of strings corresponding to set flags.
+    """
+    masks={ 0x01:       'Forward hardware limit switch active',
+            0x02:       'Reverse hardware limit switch active',
+            0x10:       'In motion, moving forward',
+            0x20:       'In motion, moving backward',
+            0x40:       'In motion, jogging forward',
+            0x80:       'In motion, jogging backward',
+            0x200:      'In motion, homing',
+            0x400:      'Homed',
+            0x1000:     'Tracking',
+            0x2000:     'Settled',
+            0x4000:     'Motion error, excessive position',
+            0x01000000: 'Motor current limit reached',
+            0x80000000: 'Channel enabled'
+            }
+    statuslist = []
+    for bitmask in masks:
+      if statusbits & bitmask:
+        statuslist.append(masks[bitmask])
+
+    return statuslist
+
+  def get_status(self, channel=0):
+    """
+    Returns the status of the controller, which is its position, velocity, and
+    a list of status strings.
+
+    Position and velocity will be in mm and mm/s respectively.
+    """
+    reqmsg = Message(message.MGMSG_MOT_REQ_DCSTATUSUPDATE, param1=channel)
+    self._send_message(reqmsg)
+
+    getmsg = self._wait_message(message.MGMSG_MOT_GET_DCSTATUSUPDATE)
+
+    """
+    <: little endian
+    H: 2 bytes for channel ID
+    i: 4 bytes for position counter
+    H: 2 bytes for velocity
+    H: 2 bytes for reserved
+    I: 4 bytes for status
+    """
+    channel, pos_apt, vel_apt, x, status = st.unpack('<HiHHI',getmsg.datastring)
+    return (pos_apt/self.position_scale,
+            vel_apt/self.velocity_scale,
+            self._decode_status(status))
+
   def identify(self):
     """
     Flashes the controller's activity LED
@@ -225,7 +276,7 @@ class Controller(object):
     abs_pos_mm = min(abs_pos_mm, self.linear_range[1])
     abs_pos_mm = max(abs_pos_mm, self.linear_range[0])
 
-    abs_pos_apt = abs_pos_mm * self.position_scale
+    abs_pos_apt = int(abs_pos_mm * self.position_scale)
 
     """
     <: little endian
@@ -239,6 +290,7 @@ class Controller(object):
 
     if wait:
       msg = self._wait_message(message.MGMSG_MOT_MOVE_COMPLETED)
+
 
   def move(self, dist_mm, channel=0, wait=True):
     """
