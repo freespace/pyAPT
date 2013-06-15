@@ -24,8 +24,9 @@ def main(args):
       print '\tMoving stage to %dmm...'%(position),
       con.goto(position)
       print 'moved'
+      print '\tNew position: %dmm'%(con.position())
       return 0
-  except Exception  as ex:
+  except pylibftdi.FtdiError as ex:
     print '\tCould not find APT controller S/N of',serial
     return 1
 
