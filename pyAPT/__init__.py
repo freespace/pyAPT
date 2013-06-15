@@ -1,13 +1,30 @@
 __version__ = "0.01"
 __author__ = "Shuning Bian"
 
-__all__ = ['Message', 'Controller', 'MTS50']
+__all__ = ['Message', 'Controller', 'MTS50', 'add_PID', 'clear_PIDs']
 
 from pyAPT import message, controller, MTS50
 
 Message = message.Message
 Controller = controller.Controller
 MTS50 = MTS50.MTS50
+
+import pylibftdi
+
+def add_PID(pid):
+  """
+  Adds a USB PID to the list of PIDs to look for when searching for APT
+  controllers
+  """
+  pylibftdi.USB_PID_LIST.append(pid)
+
+def clear_PIDs():
+  """
+  Clears all USB PIDs
+  """
+  l = pylibftdi.USB_PID_LIST
+  while len(l):
+    l.pop()
 
 # XXX By default pylibftdi looks for devices with PID of 0x6001 and 0x6014
 # which slows device listing and identification down when we JUST want to
@@ -21,8 +38,5 @@ MTS50 = MTS50.MTS50
 # just modifies pylibftdi.USB_PID_LIST, not the list used by driver.py in the
 # pylibftdi package.
 
-import pylibftdi
-l = pylibftdi.USB_PID_LIST
-while len(l):
-  l.pop()
-l.append(0xfaf0)
+clear_PIDs()
+add_PID(0xFAF0)
