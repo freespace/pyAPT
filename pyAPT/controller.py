@@ -100,7 +100,7 @@ class Controller(object):
 
   def _read_message(self):
     data = self._read(message.MGMSG_HEADER_SIZE)
-    msg = Message.unpack(data, header_only=header_only)
+    msg = Message.unpack(data, header_only=True)
     if msg.hasdata:
       data = self._read(msg.datalength)
       msglist = list(msg)
@@ -109,13 +109,14 @@ class Controller(object):
     return msg
 
   def _wait_message(self, expected_messageID):
-    m = None
-    while m and m.messageID != expected_messageID:
+    found = False
+    while not found:
       m = self._read_message()
-      if m.messageID != expected_messageID:
-        self.message_queue.append(m)
-      else:
+      found = m.messageID == expected_messageID
+      if found:
         return m
+      else:
+        self.message_queue.append(m)
 
   def identify(self):
     """
