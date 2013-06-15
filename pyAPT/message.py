@@ -23,7 +23,7 @@ class Message(_Message):
     what the message is without having to read it in its entirety.
 
     Note that dest is returned AS IS, which means its MSB will be set if the
-    message is more than just a header
+    message is more than just a header.
     """
     Header = namedtuple('Header', ['messageID', 'param1', 'param2', 'dest','src'])
     hd = Header._make(st.unpack('<HBBBB',databytes[:6]))
@@ -40,6 +40,10 @@ class Message(_Message):
       return Message( hd.messageID,
                       dest = hd.dest,
                       src = hd.src,
+                      # we need these to be set since we need to know
+                      # how long the data is when we decode only a header
+                      param1 = hd.param1,
+                      param2 = hd.param2,
                       data = data)
     else:
       return Message( hd.messageID,
@@ -89,12 +93,17 @@ class Message(_Message):
       %dB: %d bytes of data
       """
       datalen = len(self.data)
+      if type(self.data) == str:
+        datalist = list(self.data)
+      else:
+        datalist = self.data
+
       ret = st.pack(  '<HHBB%dB'%(datalen),
                       self.messageID,
                       datalen,
                       self.dest|0x80,
                       self.src,
-                      *self.data)
+                      *datalist)
     else:
       """
       <: little endian
@@ -124,15 +133,18 @@ class Message(_Message):
 
   @property
   def datastring(self):
-    return ''.join(chr(x) for x in self.data)
+    if type(self.data) == str:
+      return self.data
+    else:
+      return ''.join(chr(x) for x in self.data)
 
   @property
   def datalength(self):
     if self.hasdata:
-      if data:
-        return len(data)
+      if self.data:
+        return len(self.data)
       else:
-        return = self.param1 | (self.param2<<8)
+        return self.param1 | (self.param2<<8)
     else:
       return -1
 
