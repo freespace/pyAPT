@@ -9,34 +9,38 @@ import time
 import pylibftdi
 import pyAPT
 
-def main(args):
-  print 'Looking for APT controllers'
-  drv = pylibftdi.Driver()
-  controllers = drv.list_devices()
+def home(serial):
+  with pyAPT.Controller(serial_number=serial) as con:
+    print '\tIdentifying controller'
+    con.identify()
+    print '\tHoming parameters:', con.request_home_params()
+    print '\tHoming stage...',
+    con.home()
+    print 'homed'
 
+def main(args):
   if len(args)>1:
     serial = args[1]
   else:
     serial = None
 
   if serial:
-    controllers = filter(lambda x:x[2] == serial, controllers)
+    home(serial)
+    return 0
+  else:
+    print 'Looking for APT controllers'
+    drv = pylibftdi.Driver()
+    controllers = drv.list_devices()
 
-  if controllers:
-    for con in controllers:
-      print 'Found %s %s S/N: %s'%con
-      with pyAPT.Controller(serial_number=con[2]) as con:
-        print '\tIdentifying controller'
-        con.identify()
-        print '\tHoming parameters:', con.request_home_params()
-        print '\tHoming stage...',
-        con.home(velocity=1)
-        print 'homed'
+    if controllers:
+      for con in controllers:
+        print 'Found %s %s S/N: %s'%con
+        home(con[2])
 
       return 0
-  else:
-    print '\tNo APT controllers found. Maybe you need to specify a PID'
-    return 1
+    else:
+      print '\tNo APT controllers found. Maybe you need to specify a PID'
+      return 1
 
 if __name__ == '__main__':
   import sys
