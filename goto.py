@@ -25,6 +25,7 @@ def main(args):
       con.goto(position)
       print 'moved'
       print '\tNew position: %.2fmm'%(con.position())
+      print '\tStatus:',con.status()
       return 0
   except pylibftdi.FtdiError as ex:
     print '\tCould not find APT controller S/N of',serial
