@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Usage: python goto.py <serial> <position>
+Usage: python goto.py <serial> <position_mm>
 
 This program tells the specified controller to move the stage to the specified
 position.
