@@ -2,7 +2,7 @@
 """
 Usage: python home.py [<serial>]
 
-This program homes all APT controllers found, or the one specified
+This program homes all APT controllers found, or of the one specified
 """
 
 import time
