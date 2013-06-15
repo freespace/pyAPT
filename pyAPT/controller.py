@@ -226,7 +226,7 @@ class Controller(object):
     chanid,pos_apt=st.unpack('<Hi', dstr)
 
     # convert position from POS_apt to POS using _position_scale
-    return pos_apt / self.position_scale
+    return 1.0*pos_apt / self.position_scale
 
   def goto(self, abs_pos_mm, channel=1, wait=True):
     """
@@ -267,7 +267,6 @@ class Controller(object):
       return sts
     else:
       return None
-
 
   def move(self, dist_mm, channel=1, wait=True):
     """
@@ -379,11 +378,11 @@ class ControllerStatus(object):
                                                           statusbytestring)
 
     self.channel = channel
-    self.position = pos_apt / controller.position_scale
+    self.position = 1.0*pos_apt / controller.position_scale
 
     # XXX the protocol document, revision 7, is explicit about the scaling
     # used here, but experiments show that it is wrong.
-    self.velocity = vel_apt / controller.velocity_scale
+    self.velocity = 1.0*vel_apt / controller.velocity_scale
     self.statusbits = statusbits
 
     # save the "raw" controller values since they are convenient for
@@ -399,6 +398,9 @@ class ControllerStatus(object):
   def reverse_hardware_limit_switch_active(self):
     return self.statusbits & 0x02
 
+  @property
+  def moving(self):
+    return self.moving_forward or self.moving_reverse
   @property
   def moving_forward(self):
     return self.statusbits & 0x10
