@@ -13,7 +13,11 @@ def main(args):
   print 'Looking for APT controllers'
   drv = pylibftdi.Driver()
   controllers = drv.list_devices()
-  serial = args[1]
+
+  if len(args)>1:
+    serial = args[1]
+  else:
+    serial = None
 
   if serial:
     controllers = filter(lambda x:x[2] == serail, controllers)
