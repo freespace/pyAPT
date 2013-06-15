@@ -141,10 +141,10 @@ class Controller(object):
     H: 2 bytes for channel id
     H: 2 bytes for home direction
     H: 2 bytes for limit switch
-    I: 4 bytes for homing velocity
-    I: 4 bytes for offset distance
+    i: 4 bytes for homing velocity
+    i: 4 bytes for offset distance
     """
-    return st.unpack('<HHHII', dstr)
+    return st.unpack('<HHHii', dstr)
 
   def home(self, wait=True, velocity=0):
     """
@@ -178,12 +178,12 @@ class Controller(object):
       H: 2 bytes for channel id
       H: 2 bytes for home direction
       H: 2 bytes for limit switch
-      I: 4 bytes for homing velocity
-      I: 4 bytes for offset distance
+      i: 4 bytes for homing velocity
+      i: 4 bytes for offset distance
       """
 
       curparams[-2] = int(velocity*self.velocity_scale)
-      newparams= st.pack( '<HHHII',*curparams)
+      newparams= st.pack( '<HHHii',*curparams)
 
       homeparamsmsg = Message(message.MGMSG_MOT_SET_HOMEPARAMS, data=newparams)
       self._send_message(homeparamsmsg)
@@ -204,9 +204,9 @@ class Controller(object):
     """
     <: little endian
     H: 2 bytes for channel id
-    I: 4 bytes for position
+    i: 4 bytes for position
     """
-    chanid,pos_apt=st.unpack('<HHHII', dstr)
+    chanid,pos_apt=st.unpack('<Hi', dstr)
 
     # convert position from POS_apt to POS using _position_scale
     return pos_apt / self.position_scale
@@ -230,9 +230,9 @@ class Controller(object):
     """
     <: little endian
     H: 2 bytes for channel id
-    I: 4 bytes for absolute position
+    i: 4 bytes for absolute position
     """
-    params = st.pack( '<HI', channel, abs_pos_apt)
+    params = st.pack( '<Hi', channel, abs_pos_apt)
 
     movemsg = Message(message.MGMSG_MOT_MOVE_ABSOLUTE,data=params)
     self._send_message(movemsg)
