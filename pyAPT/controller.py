@@ -116,7 +116,7 @@ class Controller(object):
       else:
         self.message_queue.append(m)
 
-  def status(self, channel=0):
+  def status(self, channel=1):
     """
     Returns the status of the controller, which is its position, velocity, and
     statusbits
@@ -136,7 +136,13 @@ class Controller(object):
     idmsg = Message(message.MGMSG_MOD_IDENTIFY)
     self._send_message(idmsg)
 
-  def reset_params(self):
+  def reset_parameters(self):
+    """
+    Resets all parameters to their EEPROM default values.
+
+    IMPORTANT: only one class of controller appear to support this at the
+    moment, that being the BPC30x series.
+    """
     resetmsg = Message(message.MGMSG_MOT_SET_PZSTAGEPARAMDEFAULTS)
     self._send_message(resetmsg)
 
@@ -205,7 +211,7 @@ class Controller(object):
     if wait:
       m = self._wait_message(message.MGMSG_MOT_MOVE_HOMED)
 
-  def position(self, channel=0):
+  def position(self, channel=1):
     reqmsg = Message(message.MGMSG_MOT_REQ_POSCOUNTER, param1=channel)
     self._send_message(reqmsg)
 
@@ -222,7 +228,7 @@ class Controller(object):
     # convert position from POS_apt to POS using _position_scale
     return pos_apt / self.position_scale
 
-  def goto(self, abs_pos_mm, channel=0, wait=True):
+  def goto(self, abs_pos_mm, channel=1, wait=True):
     """
     Tells the stage to goto the specified absolute position, in mm.
 
@@ -263,7 +269,7 @@ class Controller(object):
       return None
 
 
-  def move(self, dist_mm, channel=0, wait=True):
+  def move(self, dist_mm, channel=1, wait=True):
     """
     Tells the stage to move from its current position the specified
     distance, in mm
@@ -286,6 +292,63 @@ class Controller(object):
     # Of course by the time I have finished writing this comment, I could have
     # just implemented MGMSG_MOT_MOVE_RELATIVE.
     return self.goto(newpos, channel=channel, wait=wait)
+
+  def set_velocity_parameters(self, acceleration, max_velocity, channel=1):
+    """
+    Sets the trapezoidal velocity parameters of the controller. Note that
+    minimum velocity cannot be set, because protocol demands it is always
+    zero.
+    """
+
+    """
+    <: small endian
+    H: 2 bytes for channel
+    i: 4 bytes for min velocity
+    i: 4 bytes for acceleration
+    i: 4 bytes for max velocity
+    """
+
+    # software limiting again for extra safety
+    acceleration = min(acceleration, self.max_acceleration)
+    max_velocity = min(max_velocity, self.max_velocity)
+
+    acc_apt = acceleration * self.acceleration_scale
+    max_vel_apt = max_velocity * self.velocity_scale
+
+    params = st.pack('<Hiii',channel,0,acc_apt, max_vel_apt)
+    setmsg = Message(message.MGMSG_MOT_SET_VELPARAMS, data=params)
+    self._send_message(setmsg)
+
+  def velocity_parameters(self, channel=1):
+    """
+    Returns the trapezoidal velocity parameters of the controller, that is
+    minimum start velocity, acceleration, and maximum velocity. All of which
+    are returned in realworld units.
+
+    channel specifies the channel to query.
+
+    Example:
+      min_vel, acc, max_vel = con.velocity_parameters()
+    """
+    reqmsg = Message(message.MGMSG_MOT_REQ_VELPARAMS, param1=channel)
+    self._send_message(reqmsg)
+
+    getmsg = self._wait_message(message.MGMSG_MOT_GET_VELPARAMS)
+
+    """
+    <: small endian
+    H: 2 bytes for channel
+    i: 4 bytes for min velocity
+    i: 4 bytes for acceleration
+    i: 4 bytes for max velocity
+    """
+    ch,min_vel,acc,max_vel = st.unpack('<Hiii',getmsg.datastring)
+
+    min_vel /= self.velocity_scale
+    max_vel /= self.velocity_scale
+    acc /= self.acceleration_scale
+
+    return min_vel, acc, max_vel
 
 class ControllerStatus(object):
   """
