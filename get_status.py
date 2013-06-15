@@ -24,7 +24,7 @@ def main(args):
     for con in controllers:
       print 'Found %s %s S/N: %s'%con
       with pyAPT.Controller(serial_number=con[2]) as con:
-        pos,vel,status = con.get_status()
+        pos,vel,status = con.status()
         print '\tController status:'
         print '\t\tPosition: %.2fmm'%(pos)
         print '\t\tVelocity: %.2fmm'%(vel)

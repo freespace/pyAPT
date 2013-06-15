@@ -144,7 +144,7 @@ class Controller(object):
 
     return statuslist
 
-  def get_status(self, channel=0):
+  def status(self, channel=0):
     """
     Returns the status of the controller, which is its position, velocity, and
     a list of status strings.
