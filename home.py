@@ -20,7 +20,7 @@ def main(args):
     serial = None
 
   if serial:
-    controllers = filter(lambda x:x[2] == serail, controllers)
+    controllers = filter(lambda x:x[2] == serial, controllers)
 
   if controllers:
     for con in controllers:
