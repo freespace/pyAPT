@@ -308,7 +308,7 @@ class ControllerStatus(object):
                                                           statusbytestring)
 
     self.channel = channel
-    self.position = pos_apt * controller.position_scale
+    self.position = pos_apt / controller.position_scale
 
     # XXX the documentation is explicit about the scaling used here
     self.velocity = vel_apt * 204.8
@@ -398,3 +398,6 @@ class ControllerStatus(object):
         statuslist.append(masks[bitmask])
 
     return statuslist
+
+  def __str__(self):
+    return 'pos=%.2fmm vel=%.2fmm/s, flags=%s'%(self.position, self.velocity, self.flag_strings())
