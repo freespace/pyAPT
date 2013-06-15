@@ -211,10 +211,9 @@ class Controller(object):
     # convert position from POS_apt to POS using _position_scale
     return pos_apt / self.position_scale
 
-  def set_position(self, abs_pos_mm, channel=0, wait=True):
+  def goto(self, abs_pos_mm, channel=0, wait=True):
     """
-    This does NOT set the position counter!! This moves the stage to the
-    ABSOLUTE position given, which is in mm.
+    Tells the stage to goto the specified absolute position, in mm.
 
     abs_pos_mm will be clamped to self.linear_range
 
