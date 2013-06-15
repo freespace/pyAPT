@@ -16,15 +16,15 @@ def main(args):
     return 1
   else:
     serial = args[1]
-    dist = int(args[2])
+    dist = float(args[2])
 
   try:
     with pyAPT.Controller(serial_number=serial) as con:
       print 'Found APT controller S/N',serial
-      print '\tMoving stage by %dmm...'%(dist),
+      print '\tMoving stage by %.2fmm...'%(dist),
       con.move(dist)
       print 'moved'
-      print '\tNew position: %dmm'%(con.position())
+      print '\tNew position: %.2fmm'%(con.position())
       return 0
   except pylibftdi.FtdiError as ex:
     print '\tCould not find APT controller S/N of',serial
