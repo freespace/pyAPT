@@ -8,8 +8,6 @@ import struct as st
 from message import Message
 import message
 
-pylibftdi.USB_PID_LIST+=[0xfaf0]
-
 class Controller(object):
   def __init__(self, serial_number=None, label=None):
     super(Controller, self).__init__()
@@ -118,36 +116,10 @@ class Controller(object):
       else:
         self.message_queue.append(m)
 
-  def _decode_status(self,statusbits):
-    """
-    Decodes the statusbits returned by the controller as part of move completed
-    and other messages. Returns a list of strings corresponding to set flags.
-    """
-    masks={ 0x01:       'Forward hardware limit switch active',
-            0x02:       'Reverse hardware limit switch active',
-            0x10:       'In motion, moving forward',
-            0x20:       'In motion, moving backward',
-            0x40:       'In motion, jogging forward',
-            0x80:       'In motion, jogging backward',
-            0x200:      'In motion, homing',
-            0x400:      'Homed',
-            0x1000:     'Tracking',
-            0x2000:     'Settled',
-            0x4000:     'Motion error, excessive position',
-            0x01000000: 'Motor current limit reached',
-            0x80000000: 'Channel enabled'
-            }
-    statuslist = []
-    for bitmask in masks:
-      if statusbits & bitmask:
-        statuslist.append(masks[bitmask])
-
-    return statuslist
-
   def status(self, channel=0):
     """
     Returns the status of the controller, which is its position, velocity, and
-    a list of status strings.
+    statusbits
 
     Position and velocity will be in mm and mm/s respectively.
     """
@@ -155,19 +127,7 @@ class Controller(object):
     self._send_message(reqmsg)
 
     getmsg = self._wait_message(message.MGMSG_MOT_GET_DCSTATUSUPDATE)
-
-    """
-    <: little endian
-    H: 2 bytes for channel ID
-    i: 4 bytes for position counter
-    H: 2 bytes for velocity
-    H: 2 bytes for reserved
-    I: 4 bytes for status
-    """
-    channel, pos_apt, vel_apt, x, status = st.unpack('<HiHHI',getmsg.datastring)
-    return (pos_apt/self.position_scale,
-            vel_apt/self.velocity_scale,
-            self._decode_status(status))
+    return ControllerStatus(self, getmsg.datastring)
 
   def identify(self):
     """
@@ -290,6 +250,9 @@ class Controller(object):
 
     if wait:
       msg = self._wait_message(message.MGMSG_MOT_MOVE_COMPLETED)
+      return ControllerStatus(self, msg.datastring)
+    else:
+      return None
 
 
   def move(self, dist_mm, channel=0, wait=True):
@@ -314,22 +277,124 @@ class Controller(object):
     #
     # Of course by the time I have finished writing this comment, I could have
     # just implemented MGMSG_MOT_MOVE_RELATIVE.
-    self.goto(newpos, channel=channel, wait=wait)
+    return self.goto(newpos, channel=channel, wait=wait)
 
-class MTS50Controller(Controller):
+class ControllerStatus(object):
   """
-  A controller for a MTS50/M-Z8 stage.
+  This class encapsulate the controller status, which includes its position,
+  velocity, and various flags.
+
+  The position and velocity properties will return realworld values of 
+  mm and mm/s respectively.
   """
-  def __init__(self,*args, **kwargs):
-    super(MTS50Controller, self).__init__(*args, **kwargs)
+  def __init__(self, controller, statusbytestring):
+    """
+    Construct an instance of ControllerStatus from the 14 byte status sent by
+    the controller which contains the current position encoder count, the
+    actual velocity, scaled, and statusbits.
+    """
 
-    # http://www.thorlabs.co.uk/thorProduct.cfm?partNumber=MTS50/M-Z8
-    self.max_velocity = 3
-    self.max_acceleration = 4.5
+    super(ControllerStatus, self).__init__()
 
-    self.position_scale = 34304
-    self.velocity_scale = 767367.49
-    self.acceleration_scale = 261.93
+    """
+    <: little endian
+    H: 2 bytes for channel ID
+    i: 4 bytes for position counter
+    H: 2 bytes for velocity
+    H: 2 bytes for reserved
+    I: 4 bytes for status
+    """
+    channel, pos_apt, vel_apt, x, statusbits = st.unpack( '<HiHHI',
+                                                          statusbytestring)
 
-    self.linear_range = (0,50)
+    self.channel = channel
+    self.position = pos_apt * controller.position_scale
 
+    # XXX the documentation is explicit about the scaling used here
+    self.velocity = vel_apt * 204.8
+    self.statusbits = statusbits
+
+  @property
+  def forward_hardware_limit_switch_active(self):
+    return self.statusbits & 0x01
+
+  @property
+  def reverse_hardware_limit_switch_active(self):
+    return self.statusbits & 0x02
+
+  @property
+  def moving_forward(self):
+    return self.statusbits & 0x10
+
+  @property
+  def moving_reverse(self):
+    return self.statusbits & 0x20
+
+  @property
+  def jogging_forward(self):
+    return self.statusbits & 0x40
+
+  @property
+  def jogging_reverse(self):
+    return self.statusbits & 0x80
+
+  @property
+  def homing(self):
+    return self.statusbits & 0x200
+
+  @property
+  def homed(self):
+    return self.statusbits & 0x400
+
+  @property
+  def tracking(self):
+    return self.statusbits & 0x1000
+
+  @property
+  def settled(self):
+    return self.statusbits & 0x2000
+
+  @property
+  def excessive_position_eror(self):
+    """
+    This flag means that there is excessive positioning error, and
+    the stage should be re-homed. This happens if while moving the stage
+    is impeded, and where it thinks it is isn't where it is
+    """
+    return self.statusbits & 0x4000
+
+  @property
+  def motor_current_limit_reached(self):
+    return self.statusbits & 0x01000000
+
+  @property
+  def channel_enabled(self):
+    return self.statusbits & 0x80000000
+
+  def flag_strings(self):
+    """
+    Returns the various flags as user readable strings
+    """
+    """
+    XXX Breaking the DRY principle here, but this is so much more compact!
+    """
+    masks={ 0x01:       'Forward hardware limit switch active',
+            0x02:       'Reverse hardware limit switch active',
+            0x10:       'In motion, moving forward',
+            0x20:       'In motion, moving backward',
+            0x40:       'In motion, jogging forward',
+            0x80:       'In motion, jogging backward',
+            0x200:      'In motion, homing',
+            0x400:      'Homed',
+            0x1000:     'Tracking',
+            0x2000:     'Settled',
+            0x4000:     'Excessive position error',
+            0x01000000: 'Motor current limit reached',
+            0x80000000: 'Channel enabled'
+            }
+    statuslist = []
+    for bitmask in masks:
+      if self.statusbits & bitmask:
+        statuslist.append(masks[bitmask])
+
+    return statuslist
