@@ -179,6 +179,9 @@ class Controller(object):
     When wait is true, this method doesn't return until MGMSG_MOT_MOVE_HOMED
     is received. Otherwise it returns immediately after having sent the
     message.
+
+    This method returns an instance of ControllerStatus if wait is True, None
+    otherwise.
     """
 
     if velocity > 0:
@@ -253,6 +256,9 @@ class Controller(object):
     Note that the wait is implemented by waiting for MGMSG_MOT_MOVE_COMPLETED,
     then querying status until the position returned matches the requested
     position, and velocity is zero
+
+    This method returns an instance of ControllerStatus if wait is True, None
+    otherwise.
     """
 
     # do some software limiting for extra safety
@@ -409,6 +415,39 @@ class Controller(object):
     fwver = '%d.%d.%d'%(fwvermajor,fwverinterim, fwverminor)
 
     return (sn,model,hwtype,fwver,notes,hwver,modstate,numchan)
+
+  def stop(self, channel=1, immediate=False, wait=True):
+    """
+    Stops the motor on the specified channel. If immediate is True, then the
+    motor stops immediately, otherwise it stops in a profiled manner, i.e.
+    decelerates accoding to max acceleration from current velocity down to zero
+
+    If wait is True, then this method returns only when MGMSG_MOT_MOVE_STOPPED
+    is read, and controller reports velocity of 0.
+
+    This method returns an instance of ControllerStatus if wait is True, None
+    otherwise.
+    """
+
+    if wait:
+      self.resume_end_of_move_messages()
+    else:
+      self.suspend_end_of_move_messages()
+
+    stopmsg = Message(message.MGMSG_MOT_MOVE_STOP,
+                      param1=channel,
+                      param2=int(immediate))
+    self._send_message(stopmsg)
+
+    if wait:
+      stoppedmsg = self._wait_message(message.MGMSG_MOT_MOVE_STOPPED)
+      sts = self.status()
+      while sts.velocity_apt:
+        time.sleep(0.001)
+        sts = self.status()
+      return sts
+    else:
+      return None
 
 class ControllerStatus(object):
   """
