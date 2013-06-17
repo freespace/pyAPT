@@ -368,6 +368,48 @@ class Controller(object):
 
     return min_vel, acc, max_vel
 
+  def info(self):
+    """
+    Gets hardware info of the controller, returned as a tuple containing:
+      - serial number
+      - model number
+      - hardware type, either 45 for multi-channel motherboard, or 44 for
+        brushless DC motor
+      - firmware version as major.interim.minor
+      - notes
+      - hardware version number
+      - modification state of controller
+      - number of channels
+    """
+
+    reqmsg = Message(message.MGMSG_HW_REQ_INFO)
+    self._send_message(reqmsg)
+
+    getmsg = self._wait_message(message.MGMSG_HW_GET_INFO)
+    """
+    <: small endian
+    I:    4 bytes for serial number
+    8s:   8 bytes for model number
+    H:    2 bytes for hw type
+    4s:   4 bytes for firmware version
+    48s:  48 bytes for notes
+    12s:  12 bytes of empty space
+    H:    2 bytes for hw version
+    H:    2 bytes for modificiation state
+    H:    2 bytes for number of channels
+    """
+    info = st.unpack('<I8sH4s48s12sHHH', getmsg.datastring)
+
+    sn,model,hwtype,fwver,notes,_,hwver,modstate,numchan = info
+
+    fwverminor = ord(fwver[0])
+    fwverinterim = ord(fwver[1])
+    fwvermajor = ord(fwver[2])
+
+    fwver = '%d.%d.%d'%(fwvermajor,fwverinterim, fwverminor)
+
+    return (sn,model,hwtype,fwver,notes,hwver,modstate,numchan)
+
 class ControllerStatus(object):
   """
   This class encapsulate the controller status, which includes its position,
