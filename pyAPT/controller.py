@@ -181,8 +181,6 @@ class Controller(object):
     message.
     """
 
-    # TODO enable/disable end of move messages depending on wait
-
     if velocity > 0:
       # first get the current settings for homing. We do this because despite
       # the fact that the protocol spec says home direction, limit switch,
