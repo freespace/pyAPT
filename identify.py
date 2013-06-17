@@ -20,7 +20,7 @@ def main(args):
         print '\tIdentifying controller'
         con.identify()
 
-      return 0
+    return 0
   else:
     print '\tNo APT controllers found. Maybe you need to specify a PID'
     return 1
