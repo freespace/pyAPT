@@ -4,9 +4,11 @@ Usage: python get_status.py [<serial>]
 
 Gets the status of all APT controllers, or of the one specified
 """
-import pylibftdi
 import pyAPT
 
+from runner import runner_serial
+
+@runner_serial
 def status(serial):
   with pyAPT.Controller(serial_number=serial) as con:
     status = con.status()
@@ -16,31 +18,7 @@ def status(serial):
     print '\t\tStatus:',status.flag_strings()
 
 
-def main(args):
-  if len(args)>1:
-    serial = args[1]
-  else:
-    serial = None
-
-  if serial:
-    status(serial)
-    return 0
-  else:
-    print 'Looking for APT controllers'
-    drv = pylibftdi.Driver()
-    controllers = drv.list_devices()
-
-    if controllers:
-      for con in controllers:
-        print 'Found %s %s S/N: %s'%con
-        status(con[2])
-
-      return 0
-    else:
-      print '\tNo APT controllers found. Maybe you need to specify a PID'
-      return 1
-
 if __name__ == '__main__':
   import sys
-  sys.exit(main(sys.argv))
+  sys.exit(status())
 
