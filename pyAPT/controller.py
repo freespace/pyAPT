@@ -172,10 +172,13 @@ class Controller(object):
       resumemsg = Message(message.MGMSG_MOT_RESUME_ENDOFMOVEMSGS)
       self._send_message(resumemsg)
 
-  def home(self, wait=True, velocity=0):
+  def home(self, wait=True, velocity=None, offset=0):
     """
-    When velocity is not 0, homing parameters will be set so homing velocity
+    When velocity is not None, homing parameters will be set so homing velocity
     will be as given, in mm per second.
+
+    offset is the home offset in mm, which will be converted to APT units and
+    passed to the controller.
 
     When wait is true, this method doesn't return until MGMSG_MOT_MOVE_HOMED
     is received. Otherwise it returns immediately after having sent the
@@ -185,37 +188,44 @@ class Controller(object):
     otherwise.
     """
 
-    if velocity > 0:
-      # first get the current settings for homing. We do this because despite
-      # the fact that the protocol spec says home direction, limit switch,
-      # and offet distance parameters are not used, they are in fact 
-      # significant. If I just pass in 0s for those parameters when setting
-      # homing parameter the stage goes the wrong way and runs itself into
-      # the other end, causing an error condition.
-      #
-      # To get around this, and the fact the correct values don't seem to be
-      # documented, we get the current parameters, assuming they are correct,
-      # and then modify only the velocity component, then send it back to the
-      # controller.
-      curparams = list(self.request_home_params())
+    # first get the current settings for homing. We do this because despite
+    # the fact that the protocol spec says home direction, limit switch,
+    # and offset distance parameters are not used, they are in fact 
+    # significant. If I just pass in 0s for those parameters when setting
+    # homing parameter the stage goes the wrong way and runs itself into
+    # the other end, causing an error condition.
+    #
+    # To get around this, and the fact the correct values don't seem to be
+    # documented, we get the current parameters, assuming they are correct,
+    # and then modify only the velocity and offset component, then send it 
+    # back to the controller.
+    curparams = list(self.request_home_params())
 
-      # make sure we never exceed the limits of our stage
-      velocity = min(self.max_velocity, velocity)
+    # make sure we never exceed the limits of our stage
 
-      """
-      <: little endian
-      H: 2 bytes for channel id
-      H: 2 bytes for home direction
-      H: 2 bytes for limit switch
-      i: 4 bytes for homing velocity
-      i: 4 bytes for offset distance
-      """
+    offset = min(offset, self.linear_range[1])
+    offset = max(offset, 0)
+    offset_apt = offset*self.position_scale
 
+    """
+    <: little endian
+    H: 2 bytes for channel id
+    H: 2 bytes for home direction
+    H: 2 bytes for limit switch
+    i: 4 bytes for homing velocity
+    i: 4 bytes for offset distance
+    """
+
+    if velocity:
+      velocity = min(velocity, self.max_velocity)
       curparams[-2] = int(velocity*self.velocity_scale)
-      newparams= st.pack( '<HHHii',*curparams)
 
-      homeparamsmsg = Message(message.MGMSG_MOT_SET_HOMEPARAMS, data=newparams)
-      self._send_message(homeparamsmsg)
+    curparams[-1] = offset_apt
+
+    newparams= st.pack( '<HHHii',*curparams)
+
+    homeparamsmsg = Message(message.MGMSG_MOT_SET_HOMEPARAMS, data=newparams)
+    self._send_message(homeparamsmsg)
 
     if wait:
       self.resume_end_of_move_messages()
