@@ -163,6 +163,14 @@ class Controller(object):
     """
     return st.unpack('<HHHii', dstr)
 
+  def suspend_end_of_move_messages(self):
+      suspendmsg = Message(message.MGMSG_MOT_SUSPEND_ENDOFMOVEMSGS)
+      self._send_message(suspendmsg)
+
+  def resume_end_of_move_messages(self):
+      resumemsg = Message(message.MGMSG_MOT_RESUME_ENDOFMOVEMSGS)
+      self._send_message(resumemsg)
+
   def home(self, wait=True, velocity=0):
     """
     When velocity is not 0, homing parameters will be set so homing velocity
@@ -172,6 +180,8 @@ class Controller(object):
     is received. Otherwise it returns immediately after having sent the
     message.
     """
+
+    # TODO enable/disable end of move messages depending on wait
 
     if velocity > 0:
       # first get the current settings for homing. We do this because despite
@@ -204,6 +214,11 @@ class Controller(object):
 
       homeparamsmsg = Message(message.MGMSG_MOT_SET_HOMEPARAMS, data=newparams)
       self._send_message(homeparamsmsg)
+
+    if wait:
+      self.resume_end_of_move_messages()
+    else:
+      self.suspend_end_of_move_messages()
 
     homemsg = Message(message.MGMSG_MOT_MOVE_HOME)
     self._send_message(homemsg)
@@ -254,6 +269,12 @@ class Controller(object):
     i: 4 bytes for absolute position
     """
     params = st.pack( '<Hi', channel, abs_pos_apt)
+
+
+    if wait:
+      self.resume_end_of_move_messages()
+    else:
+      self.suspend_end_of_move_messages()
 
     movemsg = Message(message.MGMSG_MOT_MOVE_ABSOLUTE,data=params)
     self._send_message(movemsg)
