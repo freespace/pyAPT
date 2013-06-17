@@ -68,6 +68,7 @@ class Controller(object):
     return self
 
   def __exit__(self, type_, value, traceback):
+    self.stop(wait=False)
     self._device.close()
 
   def _send_message(self, m):
