@@ -6,7 +6,7 @@ Finds all APT controllers and flashes their activity lights
 """
 import time
 import pyAPT
-
+import sys
 from runner import runner_serial
 
 @runner_serial
@@ -14,9 +14,10 @@ def identify(serial):
   with pyAPT.Controller(serial_number=serial) as con:
     print '\tIdentifying controller'
     con.identify()
+    print '\n>>>>Press enter to continue'
+    sys.stdin.readline()
 
 
 if __name__ == '__main__':
-  import sys
   sys.exit(identify())
 
