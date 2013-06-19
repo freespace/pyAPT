@@ -52,7 +52,7 @@ class Message(_Message):
                       dest = hd.dest,
                       src = hd.src)
 
-  def __new__(self, messageID, dest=0x50, src=0x01, param1=0, param2=0, data=None):
+  def __new__(cls, messageID, dest=0x50, src=0x01, param1=0, param2=0, data=None):
     assert(type(messageID) == int)
     if data:
       assert(param1 == 0 and param2 == 0)
@@ -61,7 +61,7 @@ class Message(_Message):
       if type(data) == str:
         data = [ord(c) for c in data]
 
-      return super(Message, self).__new__(Message,
+      return super(Message, cls).__new__(Message,
                                           messageID,
                                           None,
                                           None,
@@ -71,7 +71,7 @@ class Message(_Message):
     else:
       assert(type(param1) == int)
       assert(type(param2) == int)
-      return super(Message, self).__new__(Message,
+      return super(Message, cls).__new__(Message,
                                           messageID,
                                           param1,
                                           param2,
