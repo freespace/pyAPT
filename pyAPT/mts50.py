@@ -5,7 +5,7 @@ class MTS50(Controller):
   A controller for a MTS50/M-Z8 stage.
   """
   def __init__(self,*args, **kwargs):
-    super(MTS50Controller, self).__init__(*args, **kwargs)
+    super(MTS50, self).__init__(*args, **kwargs)
 
     # http://www.thorlabs.co.uk/thorProduct.cfm?partNumber=MTS50/M-Z8
     # Note that these values are pulled from the APT User software,

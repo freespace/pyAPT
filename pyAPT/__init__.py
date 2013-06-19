@@ -3,11 +3,11 @@ __author__ = "Shuning Bian"
 
 __all__ = ['Message', 'Controller', 'MTS50', 'add_PID', 'clear_PIDs']
 
-from pyAPT import message, controller, MTS50
+from pyAPT import message, controller, mts50
 
 Message = message.Message
 Controller = controller.Controller
-MTS50 = MTS50.MTS50
+MTS50 = mts50.MTS50
 
 import pylibftdi
 
