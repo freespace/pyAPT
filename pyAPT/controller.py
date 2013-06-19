@@ -42,11 +42,11 @@ class Controller(object):
     self.label = label
     self._device = dev
 
-    # some sane limits, mostly based on the MTS50/M-Z8
+    # some conservative limits
     # velocity is in mm/s
     # acceleration is in mm^2/s
-    self.max_velocity = 3
-    self.max_acceleration = 4
+    self.max_velocity = 0.3
+    self.max_acceleration = 0.3
 
     # these define how encode count translates into position, velocity
     # and acceleration. e.g. 1 encoder count is equal to 
