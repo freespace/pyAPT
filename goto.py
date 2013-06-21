@@ -9,6 +9,7 @@ position.
 import time
 import pylibftdi
 import pyAPT
+import sys
 
 def main(args):
   if len(args)<3:
@@ -19,12 +20,23 @@ def main(args):
     position = float(args[2])
 
   try:
-    with pyAPT.Controller(serial_number=serial) as con:
+    with pyAPT.MTS50(serial_number=serial) as con:
       print 'Found APT controller S/N',serial
-      print '\tMoving stage to %.2fmm...'%(position),
+      print '\tMoving stage to %.2fmm...'%(position)
       st=time.time()
-      con.goto(position)
-      print 'moved (%.2fs)'%(time.time()-st)
+      con.goto(position, wait=False)
+      stat = con.status()
+      while stat.moving:
+        out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
+        sys.stdout.write(out)
+        time.sleep(0.01)
+        stat=con.status()
+        l = len(out)
+        sys.stdout.write('\b'*l)
+        sys.stdout.write(' '*l)
+        sys.stdout.write('\b'*l)
+
+      print '\tMove completed in %.2fs'%(time.time()-st)
       print '\tNew position: %.2fmm'%(con.position())
       print '\tStatus:',con.status()
       return 0
