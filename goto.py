@@ -22,8 +22,9 @@ def main(args):
     with pyAPT.Controller(serial_number=serial) as con:
       print 'Found APT controller S/N',serial
       print '\tMoving stage to %.2fmm...'%(position),
+      st=time.time()
       con.goto(position)
-      print 'moved'
+      print 'moved (%.2fs)'%(time.time()-st)
       print '\tNew position: %.2fmm'%(con.position())
       print '\tStatus:',con.status()
       return 0
