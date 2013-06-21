@@ -26,7 +26,7 @@ def main(args):
   if controllers:
     for con in controllers:
       print 'Found %s %s S/N: %s'%con
-      with pyAPT.Controller(serial_number=con[2]) as con:
+      with pyAPT.MTS50(serial_number=con[2]) as con:
         print '\tController position =',con.position()
 
       return 0

@@ -10,10 +10,10 @@ from runner import runner_serial
 
 @runner_serial
 def status(serial):
-  with pyAPT.Controller(serial_number=serial) as con:
+  with pyAPT.MTS50(serial_number=serial) as con:
     status = con.status()
     print '\tController status:'
-    print '\t\tPosition: %.2fmm'%(status.position)
+    print '\t\tPosition: %.2fmm (%d cnt)'%(status.position, status.position_apt)
     print '\t\tVelocity: %.2fmm'%(status.velocity)
     print '\t\tStatus:',status.flag_strings()
 

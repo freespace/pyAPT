@@ -23,7 +23,7 @@ def main(args):
     for con in controllers:
       print 'Found %s %s S/N: %s'%con
       st = time.time()
-      with pyAPT.Controller(serial_number=con[2]) as con:
+      with pyAPT.MTS50(serial_number=con[2]) as con:
         print '\topen:',time.time()-st
         st = time.time()
         status = con.status()
