@@ -14,9 +14,18 @@ class MTS50(Controller):
     self.max_velocity = 0.45
     self.max_acceleration = 0.45
 
-    self.position_scale = 34304
-    self.velocity_scale = 767367.49
-    self.acceleration_scale = 261.93
+    # yeah so manual values are junk. APT User seems to have the correct
+    # values built in, in that when I tell it to go 5mm, it goes 5mm. So to
+    # compute these values:
+    #   1. In APT User set a distance, max velocity, and max accel in move
+    #      sequencer
+    #   2. Home and run
+    #   3. Extra the 'raw' values from the controller using pyAPT
+    #   4. Compute scaling factors
+
+    self.position_scale = 24576.059
+    self.velocity_scale = 366511.111
+    self.acceleration_scale = 1/0.006
 
     self.linear_range = (0,50)
 
