@@ -71,6 +71,7 @@ class Controller(object):
     self.close()
 
   def close(self):
+    print 'Closing connnection to controller',self.serial_number
     self.stop(wait=False)
     self._device.close()
 
@@ -87,7 +88,7 @@ class Controller(object):
     bytes. Otherwise we will perform a read, then immediately return with
     however many bytes we managed to read.
 
-    Note that if no data is available, then an empty byte string will be 
+    Note that if no data is available, then an empty byte string will be
     returned.
     """
     data = bytes()
@@ -96,6 +97,7 @@ class Controller(object):
       data += self._device.read(diff)
       if not block:
         break
+
       time.sleep(0.001)
 
     return data
@@ -239,7 +241,8 @@ class Controller(object):
     self._send_message(homemsg)
 
     if wait:
-      m = self._wait_message(message.MGMSG_MOT_MOVE_HOMED)
+      self._wait_message(message.MGMSG_MOT_MOVE_HOMED)
+      return self.status()
 
   def position(self, channel=1):
     reqmsg = Message(message.MGMSG_MOT_REQ_POSCOUNTER, param1=channel)
@@ -454,7 +457,7 @@ class Controller(object):
     self._send_message(stopmsg)
 
     if wait:
-      stoppedmsg = self._wait_message(message.MGMSG_MOT_MOVE_STOPPED)
+      self._wait_message(message.MGMSG_MOT_MOVE_STOPPED)
       sts = self.status()
       while sts.velocity_apt:
         time.sleep(0.001)
@@ -484,19 +487,24 @@ class ControllerStatus(object):
     <: little endian
     H: 2 bytes for channel ID
     i: 4 bytes for position counter
-    H: 2 bytes for velocity
-    H: 2 bytes for reserved
+    h: 2 bytes for velocity
+    H: 2 bytes reserved
     I: 4 bytes for status
+
+    Note that velocity in the docs is stated as a unsigned word, by in reality
+    it looks like it is signed.
     """
-    channel, pos_apt, vel_apt, x, statusbits = st.unpack( '<HiHHI',
+    channel, pos_apt, vel_apt, _, statusbits = st.unpack( '<HihHI',
                                                           statusbytestring)
 
     self.channel = channel
-    self.position = 1.0*pos_apt / controller.position_scale
+    self.position = float(pos_apt) / controller.position_scale
 
     # XXX the protocol document, revision 7, is explicit about the scaling
-    # used here, but experiments show that it is wrong.
-    self.velocity = 1.0*vel_apt / controller.velocity_scale
+    # Note that I don't trust this value, because the measured velocity
+    # does not correspond to the value from the scaling. The value used here
+    # is derived from trial and error
+    self.velocity = float(vel_apt) / 10
     self.statusbits = statusbits
 
     # save the "raw" controller values since they are convenient for
@@ -548,7 +556,7 @@ class ControllerStatus(object):
     return self.statusbits & 0x2000
 
   @property
-  def excessive_position_eror(self):
+  def excessive_position_error(self):
     """
     This flag means that there is excessive positioning error, and
     the stage should be re-homed. This happens if while moving the stage
@@ -563,6 +571,54 @@ class ControllerStatus(object):
   @property
   def channel_enabled(self):
     return self.statusbits & 0x80000000
+
+
+  @property
+  def shortstatus(self):
+    """
+    Returns a short, fixed width, status line that shows whether the
+    controller is moving, the direction, whether it has been homed, and
+    whether excessive position error is present.
+
+    These are shown via the following letters:
+      H: homed
+      M: moving
+      f: forward
+      r: reverse
+      E: excessive position error
+
+    Format of the string is as follows:
+      H-Mfr-E
+
+    Each letter may or may not be present.  When a letter is present, it is a
+    positive indication of the condition.
+
+    e.g.
+
+    "H Mf  " means homed, moving forward
+    "H-M r-E" means homed, moving reverse, excessive position error
+    """
+    shortstat = []
+    def add(flag, letter):
+      if flag:
+        shortstat.append(letter)
+      else:
+        shortstat.append(' ')
+
+    sep = '-'
+    add(self.homed, 'H')
+
+    shortstat.append(sep)
+
+    add(self.moving,'M')
+    add(self.moving_forward, 'f')
+    add(self.moving_reverse, 'r')
+
+    shortstat.append(sep)
+
+    add(self.excessive_position_error,'E')
+
+    return ''.join(shortstat)
 
   def flag_strings(self):
     """
