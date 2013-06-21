@@ -600,24 +600,24 @@ class ControllerStatus(object):
       E: excessive position error
 
     Format of the string is as follows:
-      H-Mfr-E
+      H Mfr E
 
     Each letter may or may not be present.  When a letter is present, it is a
     positive indication of the condition.
 
     e.g.
 
-    "H Mf  " means homed, moving forward
-    "H-M r-E" means homed, moving reverse, excessive position error
+    "H Mf- -" means homed, moving forward
+    "H M-r -" means homed, moving reverse, excessive position error
     """
     shortstat = []
     def add(flag, letter):
       if flag:
         shortstat.append(letter)
       else:
-        shortstat.append(' ')
+        shortstat.append('-')
 
-    sep = '-'
+    sep = ' '
     add(self.homed, 'H')
 
     shortstat.append(sep)
