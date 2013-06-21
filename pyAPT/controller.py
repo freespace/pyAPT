@@ -360,13 +360,16 @@ class Controller(object):
     setmsg = Message(message.MGMSG_MOT_SET_VELPARAMS, data=params)
     self._send_message(setmsg)
 
-  def velocity_parameters(self, channel=1):
+  def velocity_parameters(self, channel=1, raw=False):
     """
     Returns the trapezoidal velocity parameters of the controller, that is
     minimum start velocity, acceleration, and maximum velocity. All of which
     are returned in realworld units.
 
     channel specifies the channel to query.
+
+    raw specifies whether the raw controller values are returned, or the scaled
+    real world values. Defaults to False.
 
     Example:
       min_vel, acc, max_vel = con.velocity_parameters()
@@ -385,9 +388,10 @@ class Controller(object):
     """
     ch,min_vel,acc,max_vel = st.unpack('<Hiii',getmsg.datastring)
 
-    min_vel /= self.velocity_scale
-    max_vel /= self.velocity_scale
-    acc /= self.acceleration_scale
+    if not raw:
+      min_vel /= self.velocity_scale
+      max_vel /= self.velocity_scale
+      acc /= self.acceleration_scale
 
     return min_vel, acc, max_vel
 
