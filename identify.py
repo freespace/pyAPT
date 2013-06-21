@@ -17,7 +17,6 @@ def identify(serial):
     print '\n>>>>Press enter to continue'
     sys.stdin.readline()
 
-
 if __name__ == '__main__':
   sys.exit(identify())
 
