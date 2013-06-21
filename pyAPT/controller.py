@@ -73,6 +73,7 @@ class Controller(object):
   def close(self):
     print 'Closing connnection to controller',self.serial_number
     self.stop(wait=False)
+    # XXX we might want a timeout here, or this will block forever
     self._device.close()
 
   def _send_message(self, m):
@@ -334,20 +335,20 @@ class Controller(object):
     # just implemented MGMSG_MOT_MOVE_RELATIVE.
     return self.goto(newpos, channel=channel, wait=wait)
 
-  def set_velocity_parameters(self, acceleration, max_velocity, channel=1):
+  def set_velocity_parameters(self, acceleration=None, max_velocity=None, channel=1):
     """
     Sets the trapezoidal velocity parameters of the controller. Note that
     minimum velocity cannot be set, because protocol demands it is always
     zero.
-    """
 
+    When called without arguments, max acceleration and max velocity will
+    be set to self.max_acceleration and self.max_velocity
     """
-    <: small endian
-    H: 2 bytes for channel
-    i: 4 bytes for min velocity
-    i: 4 bytes for acceleration
-    i: 4 bytes for max velocity
-    """
+    if acceleration == None:
+      acceleration = self.max_acceleration
+
+    if max_velocity == None:
+      max_velocity = self.max_velocity
 
     # software limiting again for extra safety
     acceleration = min(acceleration, self.max_acceleration)
@@ -356,6 +357,13 @@ class Controller(object):
     acc_apt = acceleration * self.acceleration_scale
     max_vel_apt = max_velocity * self.velocity_scale
 
+    """
+    <: small endian
+    H: 2 bytes for channel
+    i: 4 bytes for min velocity
+    i: 4 bytes for acceleration
+    i: 4 bytes for max velocity
+    """
     params = st.pack('<Hiii',channel,0,acc_apt, max_vel_apt)
     setmsg = Message(message.MGMSG_MOT_SET_VELPARAMS, data=params)
     self._send_message(setmsg)
