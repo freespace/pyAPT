@@ -510,13 +510,20 @@ class ControllerStatus(object):
                                                           statusbytestring)
 
     self.channel = channel
-    self.position = float(pos_apt) / controller.position_scale
+    if pos_apt:
+      self.position = float(pos_apt) / controller.position_scale
+    else:
+      self.position = 0
 
     # XXX the protocol document, revision 7, is explicit about the scaling
     # Note that I don't trust this value, because the measured velocity
     # does not correspond to the value from the scaling. The value used here
     # is derived from trial and error
-    self.velocity = float(vel_apt) / 10
+    if vel_apt:
+      self.velocity = float(vel_apt) / 10
+    else:
+      self.velocity = 0
+
     self.statusbits = statusbits
 
     # save the "raw" controller values since they are convenient for
