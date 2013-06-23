@@ -1,13 +1,14 @@
 __version__ = "0.01"
 __author__ = "Shuning Bian"
 
-__all__ = ['Message', 'Controller', 'MTS50', 'add_PID', 'clear_PIDs']
+__all__ = ['Message', 'Controller', 'MTS50', 'add_PID', 'clear_PIDs', 'OutOfRangeError']
 
 from pyAPT import message, controller, mts50
 
 Message = message.Message
 Controller = controller.Controller
 MTS50 = mts50.MTS50
+OutOfRangeError = controller.OutOfRangeError
 
 import pylibftdi
 
