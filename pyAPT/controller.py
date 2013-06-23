@@ -8,6 +8,11 @@ import struct as st
 from message import Message
 import message
 
+class OutOfRangeError(Exception):
+  def __init__(self, requested, allowed):
+    val = '%f requested, but allowed range is %.2f..%.2f'%(requested, allowed[0], allowed[1])
+    super(OutOfRangeError, self).__init__(val)
+
 class Controller(object):
   def __init__(self, serial_number=None, label=None):
     super(Controller, self).__init__()
@@ -122,6 +127,23 @@ class Controller(object):
         return m
       else:
         self.message_queue.append(m)
+
+  def _position_in_range(self, absolute_pos_mm):
+    """
+    Returns True if requested absolute position is within range, False
+    otherwise
+    """
+    # get rid of floating point artifacts below our resolution
+    enccnt = int(absolute_pos_mm * self.position_scale)
+    absolute_pos_mm = enccnt * self.position_scale
+
+    if absolute_pos_mm < self.linear_range[0]:
+      return False
+
+    if absolute_pos_mm > self.linear_range[1]:
+      return False
+
+    return True
 
   def status(self, channel=1):
     """
@@ -277,11 +299,13 @@ class Controller(object):
 
     This method returns an instance of ControllerStatus if wait is True, None
     otherwise.
+
+    If the requested position is beyond the limits defined in
+    self.linear_range, and OutOfRangeError will be thrown.
     """
 
-    # do some software limiting for extra safety
-    abs_pos_mm = min(abs_pos_mm, self.linear_range[1])
-    abs_pos_mm = max(abs_pos_mm, self.linear_range[0])
+    if not self._position_in_range(abs_pos_mm):
+      raise OutOfRangeError(abs_pos_mm, self.linear_range)
 
     abs_pos_apt = int(abs_pos_mm * self.position_scale)
 
@@ -291,7 +315,6 @@ class Controller(object):
     i: 4 bytes for absolute position
     """
     params = st.pack( '<Hi', channel, abs_pos_apt)
-
 
     if wait:
       self.resume_end_of_move_messages()
@@ -315,13 +338,14 @@ class Controller(object):
     """
     Tells the stage to move from its current position the specified
     distance, in mm
+
+    This is currently implemented by getting the current position, then
+    computing a new absolute position using dist_mm, then calls
+    goto() and returns it returns. Check documentation for goto() for return
+    values and such.
     """
     curpos = self.position()
     newpos = curpos + dist_mm
-
-    # like move, we to software limiting for safety
-    newpos = min(newpos, self.linear_range[1])
-    newpos = max(newpos, self.linear_range[0])
 
     # We could implement MGMSG_MOT_MOVE_RELATIVE, or we can use goto again
     # because we calculate the new absolute position anyway.
