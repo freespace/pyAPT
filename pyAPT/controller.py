@@ -135,7 +135,9 @@ class Controller(object):
     """
     # get rid of floating point artifacts below our resolution
     enccnt = int(absolute_pos_mm * self.position_scale)
-    absolute_pos_mm = enccnt * self.position_scale
+    absolute_pos_mm = enccnt / self.position_scale
+
+    print absolute_pos_mm, self.linear_range
 
     if absolute_pos_mm < self.linear_range[0]:
       return False
