@@ -502,6 +502,9 @@ class Controller(object):
     else:
       return None
 
+  def __repr__(self):
+    return 'Controller(serial=%s, device=%s)'%(self.serial_number, self._device)
+
 class ControllerStatus(object):
   """
   This class encapsulate the controller status, which includes its position,
@@ -625,21 +628,22 @@ class ControllerStatus(object):
 
     These are shown via the following letters:
       H: homed
-      M: moving
-      f: forward
-      r: reverse
+      F: moving forward
+      R: moving reverse
+      T: tracking
+      S: settled
       E: excessive position error
 
     Format of the string is as follows:
-      H Mfr E
+      H FR TS E
 
     Each letter may or may not be present.  When a letter is present, it is a
     positive indication of the condition.
 
     e.g.
 
-    "H Mf- -" means homed, moving forward
-    "H M-r -" means homed, moving reverse, excessive position error
+    "H F- -- -" means homed, moving forward
+    "H -R -- E" means homed, moving reverse, excessive position error
     """
     shortstat = []
     def add(flag, letter):
@@ -653,9 +657,13 @@ class ControllerStatus(object):
 
     shortstat.append(sep)
 
-    add(self.moving,'M')
-    add(self.moving_forward, 'f')
-    add(self.moving_reverse, 'r')
+    add(self.moving_forward, 'F')
+    add(self.moving_reverse, 'R')
+
+    shortstat.append(sep)
+
+    add(self.tracking, 'T')
+    add(self.settled, 'S')
 
     shortstat.append(sep)
 
@@ -693,3 +701,4 @@ class ControllerStatus(object):
 
   def __str__(self):
     return 'pos=%.2fmm vel=%.2fmm/s, flags=%s'%(self.position, self.velocity, self.flag_strings())
+
