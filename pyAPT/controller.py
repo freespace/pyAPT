@@ -502,6 +502,19 @@ class Controller(object):
     else:
       return None
 
+  def keepalive(self):
+    """
+    This sends MGMSG_MOT_ACK_DCSTATUSUPDATE to the controller to keep it
+    from going dark.
+
+    Per documentation:
+      If using the USB port, this message called "server alive" must be sent
+      by the server to the controller at least once a second or the controller
+      will stop responding after ~50 commands
+    """
+    msg = Message(message.MGMSG_MOT_ACK_DCSTATUSUPDATE)
+    self._send_message(msg)
+
   def __repr__(self):
     return 'Controller(serial=%s, device=%s)'%(self.serial_number, self._device)
 
@@ -628,22 +641,25 @@ class ControllerStatus(object):
 
     These are shown via the following letters:
       H: homed
-      F: moving forward
-      R: moving reverse
+
+      M: moving
       T: tracking
       S: settled
+
+      F: forward limit switch tripped
+      R: reverse limit switch tripped
       E: excessive position error
 
     Format of the string is as follows:
-      H FR TS E
+      H MTS FRE
 
     Each letter may or may not be present.  When a letter is present, it is a
     positive indication of the condition.
 
     e.g.
 
-    "H F- -- -" means homed, moving forward
-    "H -R -- E" means homed, moving reverse, excessive position error
+    "H M-- ---" means homed, moving
+    "H M-- --E" means homed, moving reverse, excessive position error
     """
     shortstat = []
     def add(flag, letter):
@@ -657,17 +673,15 @@ class ControllerStatus(object):
 
     shortstat.append(sep)
 
-    add(self.moving_forward, 'F')
-    add(self.moving_reverse, 'R')
-
-    shortstat.append(sep)
-
+    add(self.moving, 'M')
     add(self.tracking, 'T')
     add(self.settled, 'S')
 
     shortstat.append(sep)
 
-    add(self.excessive_position_error,'E')
+    add(self.forward_hardware_limit_switch_active, 'F')
+    add(self.reverse_hardware_limit_switch_active, 'R')
+    add(self.excessive_position_error, 'E')
 
     return ''.join(shortstat)
 
