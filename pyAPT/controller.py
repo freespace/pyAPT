@@ -64,6 +64,9 @@ class Controller(object):
     # unit is in mm
     self.linear_range = (0,50)
 
+    # whether or not sofware limit in position is applied
+    self.soft_limits = True
+
     # the message queue are messages that are sent asynchronously. For example
     # if we performed a move, and are waiting for move completed message,
     # any other message received in the mean time are place in the queue.
@@ -304,7 +307,7 @@ class Controller(object):
     self.linear_range, and OutOfRangeError will be thrown.
     """
 
-    if not self._position_in_range(abs_pos_mm):
+    if self.soft_limits and not self._position_in_range(abs_pos_mm):
       raise OutOfRangeError(abs_pos_mm, self.linear_range)
 
     abs_pos_apt = int(abs_pos_mm * self.position_scale)
@@ -358,6 +361,12 @@ class Controller(object):
     # Of course by the time I have finished writing this comment, I could have
     # just implemented MGMSG_MOT_MOVE_RELATIVE.
     return self.goto(newpos, channel=channel, wait=wait)
+
+  def set_soft_limits(self, soft_limits):
+    """
+    Sets whether range limits are observed in software.
+    """
+    self.soft_limits = soft_limits
 
   def set_velocity_parameters(self, acceleration=None, max_velocity=None, channel=1):
     """
