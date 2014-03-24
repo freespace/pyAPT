@@ -19,9 +19,13 @@ class MTS50(Controller):
     # gearbox ratio: 256
     # pitch: 0.5 mm
     # thus to advance 1 mm you need to turn 48*256*2 times
-    self.position_scale = 48 * 256 * 2
-    self.velocity_scale = 366511.111
-    self.acceleration_scale = 1/0.006
+    enccnt = 48*256*2
+    T = 2048/6e6
+
+    # these equations are taken from the APT protocol manual
+    self.position_scale = enccnt
+    self.velocity_scale = enccnt * T * 65536
+    self.acceleration_scale = enccnt * T * T * 65536
 
     self.linear_range = (0,50)
 
