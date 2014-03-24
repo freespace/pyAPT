@@ -56,10 +56,11 @@ class Controller(object):
     # these define how encode count translates into position, velocity
     # and acceleration. e.g. 1 mm is equal to 1 * self.position_scale
 
-    # these values are kinda arbitary.
-    self.position_scale = 34304
-    self.velocity_scale = 767367.49
-    self.acceleration_scale = 261.93
+    # these are set to None on purpose - you should never use this class
+    # as is.
+    self.position_scale = None
+    self.velocity_scale = None
+    self.acceleration_scale = None
 
     # defines the linear, i.e. distance, range of the controller
     # unit is in mm
