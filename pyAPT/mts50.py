@@ -23,7 +23,7 @@ class MTS50(Controller):
     #   3. Extra the 'raw' values from the controller using pyAPT
     #   4. Compute scaling factors
 
-    self.position_scale = 24576.059
+    self.position_scale = 24560
     self.velocity_scale = 366511.111
     self.acceleration_scale = 1/0.006
 
