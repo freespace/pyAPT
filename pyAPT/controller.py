@@ -270,7 +270,7 @@ class Controller(object):
       self._wait_message(message.MGMSG_MOT_MOVE_HOMED)
       return self.status()
 
-  def position(self, channel=1):
+  def position(self, channel=1, raw=False):
     reqmsg = Message(message.MGMSG_MOT_REQ_POSCOUNTER, param1=channel)
     self._send_message(reqmsg)
 
@@ -284,8 +284,11 @@ class Controller(object):
     """
     chanid,pos_apt=st.unpack('<Hi', dstr)
 
-    # convert position from POS_apt to POS using _position_scale
-    return 1.0*pos_apt / self.position_scale
+    if not raw:
+      # convert position from POS_apt to POS using _position_scale
+      return 1.0*pos_apt / self.position_scale
+    else:
+      return pos_apt
 
   def goto(self, abs_pos_mm, channel=1, wait=True):
     """
