@@ -54,10 +54,11 @@ class Controller(object):
     self.max_acceleration = 0.3
 
     # these define how encode count translates into position, velocity
-    # and acceleration. e.g. 1 encoder count is equal to 
-    # 1 * self.position_scale mm 
-    self.velocity_scale = 767367.49
+    # and acceleration. e.g. 1 mm is equal to 1 * self.position_scale
+
+    # these values are kinda arbitary.
     self.position_scale = 34304
+    self.velocity_scale = 767367.49
     self.acceleration_scale = 261.93
 
     # defines the linear, i.e. distance, range of the controller
