@@ -14,16 +14,12 @@ class MTS50(Controller):
     self.max_velocity = 0.45
     self.max_acceleration = 0.45
 
-    # yeah so manual values are junk. APT User seems to have the correct
-    # values built in, in that when I tell it to go 5mm, it goes 5mm. So to
-    # compute these values:
-    #   1. In APT User set a distance, max velocity, and max accel in move
-    #      sequencer
-    #   2. Home and run
-    #   3. Extra the 'raw' values from the controller using pyAPT
-    #   4. Compute scaling factors
-
-    self.position_scale = 24560
+    # from private communication with thorlabs tech support:
+    # steps per revolution: 48
+    # gearbox ratio: 256
+    # pitch: 0.5 mm
+    # thus to advance 1 mm you need to turn 48*256*2 times
+    self.position_scale = 48 * 256 * 2
     self.velocity_scale = 366511.111
     self.acceleration_scale = 1/0.006
 
