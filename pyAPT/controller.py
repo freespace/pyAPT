@@ -335,8 +335,11 @@ class Controller(object):
     if wait:
       msg = self._wait_message(message.MGMSG_MOT_MOVE_COMPLETED)
       sts = ControllerStatus(self, msg.datastring)
-      while sts.velocity_apt or sts.position_apt != abs_pos_apt:
-        time.sleep(0.001)
+      # I find sometimes that after the move completed message there is still
+      # some jittering. This aims to wait out the jittering so we are
+      # stationary when we return
+      while sts.velocity_apt:
+        time.sleep(0.01)
         sts = self.status()
       return sts
     else:
