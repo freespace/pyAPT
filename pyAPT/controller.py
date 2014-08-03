@@ -84,8 +84,8 @@ class Controller(object):
     self.close()
 
   def close(self):
-    print 'Closing connnection to controller',self.serial_number
     if not self._device.closed:
+      print 'Closing connnection to controller',self.serial_number
       self.stop(wait=False)
       # XXX we might want a timeout here, or this will block forever
       self._device.close()
