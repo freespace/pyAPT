@@ -80,11 +80,15 @@ class Controller(object):
   def __exit__(self, type_, value, traceback):
     self.close()
 
+  def __del__(self):
+    self.close()
+
   def close(self):
     print 'Closing connnection to controller',self.serial_number
-    self.stop(wait=False)
-    # XXX we might want a timeout here, or this will block forever
-    self._device.close()
+    if not self._device.closed:
+      self.stop(wait=False)
+      # XXX we might want a timeout here, or this will block forever
+      self._device.close()
 
   def _send_message(self, m):
     """
