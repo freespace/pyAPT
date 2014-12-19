@@ -1,0 +1,14 @@
+# Serial Number of each stage
+X_AXIS_SN = '83853044'
+Y_AXIS_SN = '83854474'
+Z_AXIS_SN = '83853018'
+
+# Scanning Distance Parameters
+MAX_DIST = 50  # microns
+ENCODER_SCALE = 24576
+
+# Moving 3D Stage Flags
+RIGHT = 0
+LEFT = 1
+DOWN = 0
+UP = 1
