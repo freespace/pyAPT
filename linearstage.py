@@ -41,7 +41,7 @@ class LinearStage(object):
 	LEFT = 1
 	DOWN = 0
 	UP = 1
-	
+
 	'''
 	@brief TODO
 	'''
@@ -74,7 +74,7 @@ class LinearStage(object):
 		for idx, ainfo in enumerate(zInfo):
 			print("\t%12s: %s" % (labels[idx], bytes(ainfo)))
 		print("\n")
-	
+
 	'''
 	@brief Obtains the current position, velocity and status of a linear stage connected through USB.
 	@param[in] axis Serial number of the target linear stage.
@@ -96,7 +96,7 @@ class LinearStage(object):
 		print("X       %6.3f          %6.3f" % (float(self.MAX_DIST) - xStatus.position, xStatus.velocity))
 		print("Y       %6.3f          %6.3f" % (yStatus.position, yStatus.velocity))
 		print("Z       %6.3f          %6.3f\n" % (float(self.MAX_DIST) - zStatus.position, zStatus.velocity))
-		
+
 	'''
 	@brief Provides the position of one or all axes.
 	@param[in] axis String with the name of the axis we want to retrieve.
@@ -105,23 +105,23 @@ class LinearStage(object):
 	def getPos(self, axis = None):
 		if (axis == 'X' or axis == 'x' or axis == None):
 			with pyAPT.MTS50(serial_number = self.X_AXIS_SN) as con:
-				status = con.status()			 
+				status = con.status()
 				posX = float(self.MAX_DIST_ENCODER - status.position_apt) / self.ENCODER_SCALE
 			if (axis != None):
 				return posX
 		if (axis == 'Y' or axis == 'y' or axis == None):
 			with pyAPT.MTS50(serial_number = self.Y_AXIS_SN) as con:
-				status = con.status()			 
+				status = con.status()
 				posY = float(status.position_apt) / self.ENCODER_SCALE
 			if (axis != None):
 				return posY
 		if (axis == 'Z' or axis == 'z' or axis == None):
 			with pyAPT.MTS50(serial_number = self.Z_AXIS_SN) as con:
-				status = con.status()			 
+				status = con.status()
 				posZ = float(self.MAX_DIST_ENCODER - status.position_apt) / self.ENCODER_SCALE
 			if (axis != None):
 				return posZ
-		return [posX, posY, posZ]		
+		return [posX, posY, posZ]
 
 	'''
 		@brief Sends the 3D linear stage to the position (0, 0, 0).
@@ -149,14 +149,14 @@ class LinearStage(object):
 
 		# Setting the initial direction of the X (k) and Y(j) axes
 		kDir = self.RIGHT
-		jDir = self.DOWN		
-		
+		jDir = self.DOWN
+
 		# Initialising iterators
 		i = 0
 		j = 0
 		k = 0
 
-		# Looping through the workspace in a raster fashion 
+		# Looping through the workspace in a raster fashion
 		while (i <= self.MAX_DIST):
 			if j > self.MAX_DIST:
 				j = self.MAX_DIST
