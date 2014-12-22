@@ -26,32 +26,38 @@ The coordinate system of the 3D linear stage is as follows:
 import pyAPT
 import threading
 import time
+import yaml
 from runner import runner_serial
 
 class LinearStage(object):
 
-	# Constants
-	X_AXIS_SN        = '83853044'
-	Y_AXIS_SN        = '83854474'
-	Z_AXIS_SN        = '83853018'
-	MAX_DIST         = 50         # microns
-	ENCODER_SCALE    = 24576
-	MAX_DIST_ENCODER = MAX_DIST * ENCODER_SCALE
-	RIGHT = 0
-	LEFT = 1
-	DOWN = 0
-	UP = 1
+	'''
+	@brief Loading configuration from config file. 
+	'''
+	def __init__(self):
+		config = yaml.load(open("configfile.yml")) # $ pip install pyyaml
+		
+		# Reading linear stage serial number from config file
+		self.X_AXIS_SN = config["X_AXIS_SN"]
+		self.Y_AXIS_SN = config["Y_AXIS_SN"]
+		self.Z_AXIS_SN = config["Z_AXIS_SN"]
+		
+		# Reading distance range and scaling from config file
+		self.MAX_DIST = config["MAX_DIST"]
+		self.ENCODER_SCALE = config["ENCODER_SCALE"]
+		self.MAX_DIST_ENCODER = self.MAX_DIST * self.ENCODER_SCALE
 
-	'''
-	@brief TODO
-	'''
-#	def __init__(self):
-#		self.running = True
-#		self.threads = []
+		# Moving 3D Stage Flags
+		self.RIGHT = 0
+		self.LEFT = 1
+		self.DOWN = 0
+		self.UP = 1
 
 	def getInfoAxis(self, axis):
 		con = pyAPT.MTS50(serial_number = axis)
-		return con.info()
+		ret = con.info()
+		con.close()
+		return ret
 
 	'''
 	@brief Prints the serial number, model, type, firmware version and servo of all the connected stages.
@@ -82,7 +88,9 @@ class LinearStage(object):
 	'''
 	def getStatusAxis(self, axis):
 		con = pyAPT.MTS50(serial_number = axis)
-		return con.status()
+		ret = con.status()
+		con.close()
+		return ret
 
 	'''
 	@brief Prints the axis, position and velocity of the connected stages.
@@ -127,13 +135,25 @@ class LinearStage(object):
 		@brief Sends the 3D linear stage to the position (0, 0, 0).
 	'''
 	def goHome(self):
+		# Move to home position of the stage
 		self.moveAbsolute(self.MAX_DIST, 0, self.MAX_DIST)
+
+		# Verify X axis home position
 		con = pyAPT.MTS50(serial_number = self.X_AXIS_SN)
 		con.home()
+		con.close()
+		
+		# Verify Y axis home position
 		con = pyAPT.MTS50(serial_number = self.Y_AXIS_SN)
 		con.home()
+		con.close()
+
+		# Verify Z axis home position
 		con = pyAPT.MTS50(serial_number = self.Z_AXIS_SN)
 		con.home()
+		con.close()
+
+		# Move to our reference frame home position
 		self.moveAbsolute(0, 0, 0)
 
 	'''
@@ -143,9 +163,9 @@ class LinearStage(object):
 	'''
 	def rasterScan(self, step, delayMs):
 		# Going home to reset the encoders
-		print('Homing... ')
+		print('Homing... ', end = '', flush = True)
 		self.goHome()
-		print("OK\n")
+		print('OK')
 
 		# Setting the initial direction of the X (k) and Y(j) axes
 		kDir = self.RIGHT
@@ -203,14 +223,9 @@ class LinearStage(object):
 		con.goto(x, wait = False)
 		stat = con.status()
 		while stat.moving:
-			# out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
-			# sys.stdout.write(out)
 			time.sleep(0.01)
 			stat = con.status()
-			# l = len(out)
-			# sys.stdout.write('\b'*l)
-			# sys.stdout.write(' '*l)
-			# sys.stdout.write('\b'*l)
+		con.close()
 
 	'''
 	TODO
@@ -220,14 +235,9 @@ class LinearStage(object):
 		con.goto(y, wait = False)
 		stat = con.status()
 		while stat.moving:
-			# out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
-			# sys.stdout.write(out)
 			time.sleep(0.01)
 			stat = con.status()
-			# l = len(out)
-			# sys.stdout.write('\b'*l)
-			# sys.stdout.write(' '*l)
-			# sys.stdout.write('\b'*l)
+		con.close()
 
 	'''
 	TODO
@@ -238,14 +248,9 @@ class LinearStage(object):
 		con.goto(z, wait = False)
 		stat = con.status()
 		while stat.moving:
-			# out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
-			# sys.stdout.write(out)
 			time.sleep(0.01)
 			stat = con.status()
-			# l = len(out)
-			# sys.stdout.write('\b'*l)
-			# sys.stdout.write(' '*l)
-			# sys.stdout.write('\b'*l)
+		con.close()
 
 	'''
 		@brief TODO
