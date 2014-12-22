@@ -127,12 +127,13 @@ class LinearStage(object):
 		@brief Sends the 3D linear stage to the position (0, 0, 0).
 	'''
 	def goHome(self):
+		self.moveAbsolute(self.MAX_DIST, 0, self.MAX_DIST)
 		con = pyAPT.MTS50(serial_number = self.X_AXIS_SN)
-		con.home(velocity = 40)
+		con.home()
 		con = pyAPT.MTS50(serial_number = self.Y_AXIS_SN)
-		con.home(velocity = 40)
+		con.home()
 		con = pyAPT.MTS50(serial_number = self.Z_AXIS_SN)
-		con.home(velocity = 40)
+		con.home()
 		self.moveAbsolute(0, 0, 0)
 
 	'''
@@ -202,11 +203,11 @@ class LinearStage(object):
 		con.goto(x, wait = False)
 		stat = con.status()
 		while stat.moving:
-			out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
+			# out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
 			# sys.stdout.write(out)
 			time.sleep(0.01)
 			stat = con.status()
-			l = len(out)
+			# l = len(out)
 			# sys.stdout.write('\b'*l)
 			# sys.stdout.write(' '*l)
 			# sys.stdout.write('\b'*l)
@@ -219,11 +220,11 @@ class LinearStage(object):
 		con.goto(y, wait = False)
 		stat = con.status()
 		while stat.moving:
-			out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
+			# out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
 			# sys.stdout.write(out)
 			time.sleep(0.01)
 			stat = con.status()
-			l = len(out)
+			# l = len(out)
 			# sys.stdout.write('\b'*l)
 			# sys.stdout.write(' '*l)
 			# sys.stdout.write('\b'*l)
@@ -237,11 +238,11 @@ class LinearStage(object):
 		con.goto(z, wait = False)
 		stat = con.status()
 		while stat.moving:
-			out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
+			# out = '        pos %3.2fmm vel %3.2fmm/s'%(stat.position, stat.velocity)
 			# sys.stdout.write(out)
 			time.sleep(0.01)
 			stat = con.status()
-			l = len(out)
+			# l = len(out)
 			# sys.stdout.write('\b'*l)
 			# sys.stdout.write(' '*l)
 			# sys.stdout.write('\b'*l)
@@ -254,15 +255,18 @@ class LinearStage(object):
 		@param[in] delayMs TODO
 	'''
 	def moveAbsolute(self, x, y, z):
-		tx = threading.Thread(target = self.moveAbsoluteX(x))
-		ty = threading.Thread(target = self.moveAbsoluteY(y))
-		tz = threading.Thread(target = self.moveAbsoluteZ(z))
-		tx.daemon = True
-		ty.daemon = True
-		tz.daemon = True
-		tx.start()
-		ty.start()
-		tz.start()
+		#tx = threading.Thread(target = self.moveAbsoluteX(x))
+		#ty = threading.Thread(target = self.moveAbsoluteY(y))
+		#tz = threading.Thread(target = self.moveAbsoluteZ(z))
+		#tx.daemon = True
+		#ty.daemon = True
+		#tz.daemon = True
+		#tx.start()
+		#ty.start()
+		#tz.start()
+		self.moveAbsoluteX(x)
+		self.moveAbsoluteY(y)
+		self.moveAbsoluteZ(z)
 
 	'''
 		@brief TODO

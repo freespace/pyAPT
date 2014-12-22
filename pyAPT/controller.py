@@ -242,7 +242,7 @@ class Controller(object):
 
     offset = min(offset, self.linear_range[1])
     offset = max(offset, 0)
-    offset_apt = offset*self.position_scale
+    offset_apt = offset * self.position_scale
 
     """
     <: little endian
@@ -255,7 +255,7 @@ class Controller(object):
 
     if velocity:
       velocity = min(velocity, self.max_velocity)
-      curparams[-2] = int(velocity*self.velocity_scale)
+      curparams[-2] = int(velocity * self.velocity_scale)
 
     curparams[-1] = offset_apt
 
