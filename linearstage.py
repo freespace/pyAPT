@@ -21,13 +21,24 @@ The coordinate system of the 3D linear stage is as follows:
 	|						|           __						| |  ||  ||  |
 	o-----> X			o-----> Y  |__|					o-----> X 
 
+Pre-requisites:
+	
+	1) pip install --upgrade matplotlib
+	2) pip install --upgrade mpl_toolkits
+	3) Run this command before executing this script:
+			export PYTHONPATH=/Library/Python/2.7/site-packages
+
 '''
 
 import pyAPT
 import threading
 import time
 import yaml
+import sys
+from math import *
 from runner import runner_serial
+from matplotlib import pyplot as plt 
+from mpl_toolkits.mplot3d import Axes3D
 
 class LinearStage(object):
 
@@ -52,6 +63,15 @@ class LinearStage(object):
 		self.LEFT = 1
 		self.DOWN = 0
 		self.UP = 1
+
+		# Plotting stuff
+		self.fig = plt.figure()
+		plt.ion()
+		self.ax = self.fig.gca(projection = '3d')
+		self.ax.set_xlim3d(0, self.MAX_DIST)
+		self.ax.set_ylim3d(0, self.MAX_DIST)
+		self.ax.set_zlim3d(0, self.MAX_DIST)
+		# self.ax.view_init(elev = 45, azim = 90)
 
 	def getInfoAxis(self, axis):
 		con = pyAPT.MTS50(serial_number = axis)
@@ -132,7 +152,7 @@ class LinearStage(object):
 		return [posX, posY, posZ]
 
 	'''
-		@brief Sends the 3D linear stage to the position (0, 0, 0).
+	@brief Sends the 3D linear stage to the position (0, 0, 0).
 	'''
 	def goHome(self):
 		# Move to home position of the stage
@@ -157,14 +177,20 @@ class LinearStage(object):
 		self.moveAbsolute(0, 0, 0)
 
 	'''
-		@brief This method performs a 3D raster scan.
-		@param[in] step    Increment in microns from point to point.
-		@param[in] delayMs Time delay after each position has been reached. It stabilises the movement.
+	@brief This method performs a 3D raster scan.
+	@param[in] step  Increment in microns from point to point.
+	@param[in] delay Seconds of delay after each position has been reached.
+	FIXME: show points in graph at the same time that the stage is moving.
+	FIXME: rotate the 3D view so that it is equivalent to the real coordinate frame.
 	'''
-	def rasterScan(self, step, delayMs):
+	def rasterScan(self, step, delay):
+		# FIXME: reset plot if it was already opened
+		# plt.close()
+
 		# Going home to reset the encoders
-		print('Homing... ', end = '', flush = True)
-		self.goHome()
+		sys.stdout.write('Homing... ')
+		sys.stdout.flush()
+		self.moveAbsolute(0, 0, 0)
 		print('OK')
 
 		# Setting the initial direction of the X (k) and Y(j) axes
@@ -172,9 +198,12 @@ class LinearStage(object):
 		jDir = self.DOWN
 
 		# Initialising iterators
-		i = 0
-		j = 0
-		k = 0
+		i = 0.0
+		j = 0.0
+		k = 0.0
+
+		# Showing the window with the plot of the points
+		# plt.show()
 
 		# Looping through the workspace in a raster fashion
 		while (i <= self.MAX_DIST):
@@ -193,7 +222,11 @@ class LinearStage(object):
 					kDir = self.RIGHT
 				while (k >= 0 and k <= self.MAX_DIST):
 					self.moveAbsolute(k, j, i)
-					time.sleep(delayMs / 1000)
+					print('Current position: %6.3f %6.3f %6.3f' % (k, j, i))
+					# self.ax.scatter(k, j, i, zdir = 'z', c = 'red')
+					# plt.draw()
+					time.sleep(delay)
+					print('Moving to next position ...')
 					if kDir == self.RIGHT:
 						k += step
 					else:
@@ -205,17 +238,94 @@ class LinearStage(object):
 			i += step
 
 	'''
-		@brief TODO
-		@param[in] stepX TODO
-		@param[in] stepY TODO
-		@param[in] stepZ TODO
-		@param[in] delayMs TODO
+	@brief Cylindrical scan starting from the floor and going up. For each height level it
+	       performs (self.MAX_DIST / step) circles. The scanning is clockwise. The spacing
+			 between the points of each circle is maintained the same regardless the distance
+			 to the centre of the cylinder. That is, the external circles have more points
+			 than the internal ones to maintain the same spacing.
+	@param[in] stepAngle Initial angle of separation between points. It is a ratio of pi. 
+	@param[in] step      Increment of the radius of the circle for each step of scanning.
+	                     It is also used for the increment in the z axis. It is a ratio of
+								the maximum distance.
+	@param[in] delay     Delay in seconds after a position has been reached.
+	FIXME: rotate the 3D view so that it is equivalent to the real coordinate frame.
 	'''
-	def spiralScan(self, stepX, stepY, stepZ, delayMs):
-		return 0
+	def cylindricalScan(self, stepAngle, step, delay):
+		# Checking that the parameters are ratios
+		if (stepAngle > 1 or step > 1):
+			print('The step angle and the step must be lower than one because they are ratios.')
+
+		IN = 0
+		OUT = 1
+		stepAngle *= pi
+		initialStepAngle = stepAngle
+		phi = pi
+		step *= self.MAX_DIST
+		r = step
+		z = 0
+		rDir = OUT
+		epsilon = 0.001
+		
+		# FIXME: reset plot if it was already opened
+		# plt.close()
+
+		# Going home to reset the encoders
+		sys.stdout.write('Homing... ')
+		sys.stdout.flush()
+		# self.moveAbsolute(0, 0, 0)
+		print('OK')
+
+		# Showing the window with the plot of the points
+		plt.show()
+
+		# Looping around all the points of the cylinder
+		while (z <= self.MAX_DIST):
+			if r > self.MAX_DIST / 2:
+				stepAngle = (stepAngle * r) / (r - step)
+				r -= step
+				rDir = IN
+			else:
+				stepAngle = initialStepAngle
+				r = step
+				rDir = OUT
+				x = self.MAX_DIST / 2
+				y = self.MAX_DIST / 2
+				self.moveAbsolute(x, y, z)
+				print('Current position: %6.3f %6.3f %6.3f' % (x, y, z))
+				self.ax.scatter(x, y, z, zdir = 'z', c = 'red')
+				plt.draw()
+				time.sleep(delay)
+			while ((r > step or abs(r - step) < epsilon) and (r < self.MAX_DIST / 2 or abs(r - self.MAX_DIST / 2) < epsilon)):
+				while (phi > -pi):
+					x = r * cos(phi) + self.MAX_DIST / 2
+					y = r * sin(phi) + self.MAX_DIST / 2
+					self.moveAbsolute(x, y, z)
+					print('Current position: %6.3f %6.3f %6.3f' % (x, y, z))
+					self.ax.scatter(x, y, z, zdir = 'z', c = 'red')
+					plt.draw()
+					time.sleep(delay)
+					phi -= stepAngle
+				if (rDir == IN):
+					if (abs(r - step) > epsilon):
+						stepAngle = (stepAngle * r) / (r - step)
+					r -= step
+				else:
+					stepAngle = (stepAngle * r) / (r + step)
+					r += step	
+				phi = pi
+			if (rDir == IN):
+				x = self.MAX_DIST / 2
+				y = self.MAX_DIST / 2
+				self.moveAbsolute(x, y, z)
+				print('Current position: %6.3f %6.3f %6.3f' % (x, y, z))
+				self.ax.scatter(x, y, z, zdir = 'z', c = 'red')
+				plt.draw()
+				time.sleep(delay)
+			z += step
 
 	'''
-	TODO
+	@brief Moving X axis of the stage to the position x (mm)
+	@param[in] x Goal position in mm.
 	'''
 	def moveAbsoluteX(self, x):
 		x = float(self.MAX_DIST) - x
@@ -228,7 +338,8 @@ class LinearStage(object):
 		con.close()
 
 	'''
-	TODO
+	@brief Moving Y axis of the stage to the position y (mm)
+	@param[in] y Goal position in mm.
 	'''
 	def moveAbsoluteY(self, y):
 		con = pyAPT.MTS50(serial_number = self.Y_AXIS_SN)
@@ -240,7 +351,8 @@ class LinearStage(object):
 		con.close()
 
 	'''
-	TODO
+	@brief Moving Z axis of the stage to the position z (mm)
+	@param[in] z Goal position in mm.
 	'''
 	def moveAbsoluteZ(self, z):
 		z = float(self.MAX_DIST) - z
@@ -253,11 +365,11 @@ class LinearStage(object):
 		con.close()
 
 	'''
-		@brief TODO
-		@param[in] x TODO
-		@param[in] y TODO
-		@param[in] z TODO
-		@param[in] delayMs TODO
+	@brief Move the stage to the position x, y, z.
+	@param[in] x     Position of the x axis in mm.
+	@param[in] y     Position of the y axis in mm.
+	@param[in] z     Position of the z axis in mm.
+	@param[in] delay Delay (in seconds) after each position has been reached.
 	'''
 	def moveAbsolute(self, x, y, z):
 		#tx = threading.Thread(target = self.moveAbsoluteX(x))
@@ -274,11 +386,11 @@ class LinearStage(object):
 		self.moveAbsoluteZ(z)
 
 	'''
-		@brief TODO
-		@param[in] x TODO
-		@param[in] y TODO
-		@param[in] z TODO
-		@param[in] delayMs TODO
+	@brief TODO
+	@param[in] x TODO
+	@param[in] y TODO
+	@param[in] z TODO
+	@param[in] delayMs TODO
 	'''
 	def moveRelative(self, x, y, z):
 		return 0
