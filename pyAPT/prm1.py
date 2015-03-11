@@ -31,5 +31,5 @@ class PRM1(Controller):
     self.velocity_scale = enccnt * T * 65536
     self.acceleration_scale = enccnt * T * T * 65536
 
-    self.linear_range = (0,360)
+    self.linear_range = (-180,180)
 
