@@ -17,7 +17,7 @@ def home(serial):
     con.identify()
     print '\tHoming parameters:', con.request_home_params()
     print '\tHoming stage...',
-    con.home(velocity=2)
+    con.home(velocity = 10)
     print 'homed'
 
 if __name__ == '__main__':
