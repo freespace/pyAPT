@@ -85,7 +85,7 @@ class Controller(object):
 
   def close(self):
     if not self._device.closed:
-      print 'Closing connnection to controller',self.serial_number
+      # print 'Closing connnection to controller',self.serial_number
       self.stop(wait=False)
       # XXX we might want a timeout here, or this will block forever
       self._device.close()
@@ -242,7 +242,7 @@ class Controller(object):
 
     offset = min(offset, self.linear_range[1])
     offset = max(offset, 0)
-    offset_apt = offset*self.position_scale
+    offset_apt = offset * self.position_scale
 
     """
     <: little endian
@@ -255,7 +255,7 @@ class Controller(object):
 
     if velocity:
       velocity = min(velocity, self.max_velocity)
-      curparams[-2] = int(velocity*self.velocity_scale)
+      curparams[-2] = int(velocity * self.velocity_scale)
 
     curparams[-1] = offset_apt
 
@@ -590,6 +590,7 @@ class ControllerStatus(object):
     # save the "raw" controller values since they are convenient for
     # zero-checking
     self.position_apt = pos_apt
+    self.position_scale = controller.position_scale
     self.velocity_apt = vel_apt
 
   @property
