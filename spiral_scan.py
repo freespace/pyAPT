@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import print_function, division
 from math import *
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import *

@@ -6,6 +6,7 @@ Based on APT Communication Protocol Rev. 7 (Thorlabs)
 """
 from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import division
 import struct as st
 from collections import namedtuple
 
