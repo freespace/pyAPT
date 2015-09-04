@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from numpy import *
 from mpl_toolkits.mplot3d import *
 from matplotlib import pyplot as plt

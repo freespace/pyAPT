@@ -1,12 +1,13 @@
 """
 Simple class which encapsulate an APT controller
 """
+from __future__ import absolute_import
 import pylibftdi
 import time
 import struct as st
 
-from message import Message
-import message
+from .message import Message
+from . import message
 
 class OutOfRangeError(Exception):
   def __init__(self, requested, allowed):

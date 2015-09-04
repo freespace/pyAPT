@@ -29,6 +29,8 @@ Pre-requisites:
 			export PYTHONPATH=/Library/Python/2.7/site-packages
 
 '''
+from __future__ import absolute_import
+from __future__ import print_function
 
 import pyAPT
 import threading
@@ -90,15 +92,15 @@ class LinearStage(object):
 		print("\nInformation of the X axis:")
 		print('--------------------------')
 		for idx, ainfo in enumerate(xInfo):
-			print("\t%12s: %s" % (labels[idx], bytes(ainfo)))
+			print(("\t%12s: %s" % (labels[idx], bytes(ainfo))))
 		print("\nInformation of the Y axis:")
 		print('--------------------------')
 		for idx, ainfo in enumerate(yInfo):
-			print("\t%12s: %s" % (labels[idx], bytes(ainfo)))
+			print(("\t%12s: %s" % (labels[idx], bytes(ainfo))))
 		print("\nInformation of the Z axis:")
 		print('--------------------------')
 		for idx, ainfo in enumerate(zInfo):
-			print("\t%12s: %s" % (labels[idx], bytes(ainfo)))
+			print(("\t%12s: %s" % (labels[idx], bytes(ainfo))))
 		print("\n")
 
 	'''
@@ -121,9 +123,9 @@ class LinearStage(object):
 		zStatus = self.getStatusAxis(self.Z_AXIS_SN)
 		print("\nAxis:   Position [mm]:   Velocity [mm/s]:")
 		print('-----   --------------   ----------------')
-		print("X       %6.3f          %6.3f" % (float(self.MAX_DIST) - xStatus.position, xStatus.velocity))
-		print("Y       %6.3f          %6.3f" % (yStatus.position, yStatus.velocity))
-		print("Z       %6.3f          %6.3f\n" % (float(self.MAX_DIST) - zStatus.position, zStatus.velocity))
+		print(("X       %6.3f          %6.3f" % (float(self.MAX_DIST) - xStatus.position, xStatus.velocity)))
+		print(("Y       %6.3f          %6.3f" % (yStatus.position, yStatus.velocity)))
+		print(("Z       %6.3f          %6.3f\n" % (float(self.MAX_DIST) - zStatus.position, zStatus.velocity)))
 
 	'''
 	@brief Provides the position of one or all axes.
@@ -222,7 +224,7 @@ class LinearStage(object):
 					kDir = self.RIGHT
 				while (k >= 0 and k <= self.MAX_DIST):
 					self.moveAbsolute(k, j, i)
-					print('Current position: %6.3f %6.3f %6.3f' % (k, j, i))
+					print(('Current position: %6.3f %6.3f %6.3f' % (k, j, i)))
 					# self.ax.scatter(k, j, i, zdir = 'z', c = 'red')
 					# plt.draw()
 					time.sleep(delay)
@@ -291,7 +293,7 @@ class LinearStage(object):
 				x = self.MAX_DIST / 2
 				y = self.MAX_DIST / 2
 				self.moveAbsolute(x, y, z)
-				print('Current position: %6.3f %6.3f %6.3f' % (x, y, z))
+				print(('Current position: %6.3f %6.3f %6.3f' % (x, y, z)))
 				self.ax.scatter(x, y, z, zdir = 'z', c = 'red')
 				plt.draw()
 				time.sleep(delay)
@@ -300,7 +302,7 @@ class LinearStage(object):
 					x = r * cos(phi) + self.MAX_DIST / 2
 					y = r * sin(phi) + self.MAX_DIST / 2
 					self.moveAbsolute(x, y, z)
-					print('Current position: %6.3f %6.3f %6.3f' % (x, y, z))
+					print(('Current position: %6.3f %6.3f %6.3f' % (x, y, z)))
 					self.ax.scatter(x, y, z, zdir = 'z', c = 'red')
 					plt.draw()
 					time.sleep(delay)
@@ -317,7 +319,7 @@ class LinearStage(object):
 				x = self.MAX_DIST / 2
 				y = self.MAX_DIST / 2
 				self.moveAbsolute(x, y, z)
-				print('Current position: %6.3f %6.3f %6.3f' % (x, y, z))
+				print(('Current position: %6.3f %6.3f %6.3f' % (x, y, z)))
 				self.ax.scatter(x, y, z, zdir = 'z', c = 'red')
 				plt.draw()
 				time.sleep(delay)

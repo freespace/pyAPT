@@ -4,6 +4,8 @@ Simple class to make construction and decoding of message bytes easier.
 Based on APT Communication Protocol Rev. 7 (Thorlabs)
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import struct as st
 from collections import namedtuple
 
@@ -120,7 +122,7 @@ class Message(_Message):
                       self.dest,
                       self.src)
     if verbose:
-      print bytes(self),'=',map(lambda x:hex(ord(x)), ret)
+      print(bytes(self),'=',[hex(ord(x)) for x in ret])
 
     return ret
 

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from math import *
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import *
@@ -80,7 +82,7 @@ while (z <= maxSize):
 
             phi -= stepAngle
 
-        print 'B', icolor, stepAngle, r
+        print('B', icolor, stepAngle, r)
 
 
         if (rDir == IN):
@@ -94,7 +96,7 @@ while (z <= maxSize):
             stepAngle = (stepAngle * r) / (r + step)
             r += step
 
-        print 'A', icolor, stepAngle, r
+        print('A', icolor, stepAngle, r)
 
         phi = pi
 
