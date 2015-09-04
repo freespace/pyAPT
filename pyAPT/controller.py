@@ -18,6 +18,11 @@ class Controller(object):
   def __init__(self, serial_number=None, label=None):
     super(Controller, self).__init__()
 
+    if type(serial_number) == bytes:
+      serial_number = serial_number.decode()
+    else:
+      serial_number = str(serial_number)
+
     # this takes up to 2-3s:
     dev = pylibftdi.Device(mode='b', device_id=serial_number)
     dev.baudrate = 115200
