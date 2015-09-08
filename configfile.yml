@@ -1,0 +1,8 @@
+# Serial Number of each stage
+X_AXIS_SN: '83853044'
+Y_AXIS_SN: '83854474'
+Z_AXIS_SN: '83853018'
+
+# Scanning Distance Parameters
+MAX_DIST: 50 # mm
+ENCODER_SCALE: 24576

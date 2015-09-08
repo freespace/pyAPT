@@ -4,6 +4,10 @@ Simple class to make construction and decoding of message bytes easier.
 Based on APT Communication Protocol Rev. 7 (Thorlabs)
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import division
+import sys
 import struct as st
 from collections import namedtuple
 
@@ -120,7 +124,7 @@ class Message(_Message):
                       self.dest,
                       self.src)
     if verbose:
-      print bytes(self),'=',map(lambda x:hex(ord(x)), ret)
+      print(bytes(self),'=',[hex(ord(x)) for x in ret])
 
     return ret
 
@@ -133,10 +137,16 @@ class Message(_Message):
 
   @property
   def datastring(self):
-    if type(self.data) == str:
-      return self.data
+    if (sys.version_info > (3, 0)):
+      if type(self.data) == bytes:
+        return self.data
+      else:
+        return self.data.encode()
     else:
-      return ''.join(chr(x) for x in self.data)
+      if type(self.data) == str:
+        return self.data
+      else:
+        return ''.join(chr(x) for x in self.data)
 
   @property
   def datalength(self):

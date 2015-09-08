@@ -1,12 +1,13 @@
 """
 Simple class which encapsulate an APT controller
 """
+from __future__ import absolute_import, division
 import pylibftdi
 import time
 import struct as st
 
-from message import Message
-import message
+from .message import Message
+from . import message
 
 class OutOfRangeError(Exception):
   def __init__(self, requested, allowed):
@@ -16,6 +17,11 @@ class OutOfRangeError(Exception):
 class Controller(object):
   def __init__(self, serial_number=None, label=None):
     super(Controller, self).__init__()
+
+    if type(serial_number) == bytes:
+      serial_number = serial_number.decode()
+    else:
+      serial_number = str(serial_number)
 
     # this takes up to 2-3s:
     dev = pylibftdi.Device(mode='b', device_id=serial_number)
@@ -85,7 +91,7 @@ class Controller(object):
 
   def close(self):
     if not self._device.closed:
-      print 'Closing connnection to controller',self.serial_number
+      # print 'Closing connnection to controller',self.serial_number
       self.stop(wait=False)
       # XXX we might want a timeout here, or this will block forever
       self._device.close()
@@ -242,7 +248,7 @@ class Controller(object):
 
     offset = min(offset, self.linear_range[1])
     offset = max(offset, 0)
-    offset_apt = offset*self.position_scale
+    offset_apt = offset * self.position_scale
 
     """
     <: little endian
@@ -255,7 +261,7 @@ class Controller(object):
 
     if velocity:
       velocity = min(velocity, self.max_velocity)
-      curparams[-2] = int(velocity*self.velocity_scale)
+      curparams[-2] = int(velocity * self.velocity_scale)
 
     curparams[-1] = offset_apt
 
@@ -590,6 +596,7 @@ class ControllerStatus(object):
     # save the "raw" controller values since they are convenient for
     # zero-checking
     self.position_apt = pos_apt
+    self.position_scale = controller.position_scale
     self.velocity_apt = vel_apt
 
   @property

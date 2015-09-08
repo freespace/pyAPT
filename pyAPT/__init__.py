@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import pylibftdi
 
 from pyAPT import message, controller, mts50, prm1

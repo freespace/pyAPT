@@ -1,4 +1,5 @@
-from controller import Controller
+from __future__ import absolute_import, division
+from .controller import Controller
 
 class MTS50(Controller):
   """
