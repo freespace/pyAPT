@@ -60,10 +60,12 @@ class Message(_Message):
     assert(type(messageID) == int)
     if data:
       assert(param1 == 0 and param2 == 0)
-      assert(type(data) in [list, tuple, str])
+      assert(type(data) in [list, tuple, str, bytes])
 
       if type(data) == str:
         data = [ord(c) for c in data]
+      elif type(data) == bytes:
+        data = list(bytes)
 
       return super(Message, cls).__new__(Message,
                                           messageID,
