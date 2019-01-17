@@ -65,7 +65,7 @@ class Message(_Message):
       if type(data) == str:
         data = [ord(c) for c in data]
       elif type(data) == bytes:
-        data = list(bytes)
+        data = list(data)
 
       return super(Message, cls).__new__(Message,
                                           messageID,
