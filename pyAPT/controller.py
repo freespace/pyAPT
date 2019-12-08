@@ -124,8 +124,10 @@ class Controller(object):
     return data
 
   def _read_message(self):
+    print('Reading message header')
     data = self._read(message.MGMSG_HEADER_SIZE)
     msg = Message.unpack(data, header_only=True)
+    print('Got message', msg.messageID)
     if msg.hasdata:
       data = self._read(msg.datalength)
       msglist = list(msg)
@@ -233,14 +235,14 @@ class Controller(object):
 
     # first get the current settings for homing. We do this because despite
     # the fact that the protocol spec says home direction, limit switch,
-    # and offset distance parameters are not used, they are in fact 
+    # and offset distance parameters are not used, they are in fact
     # significant. If I just pass in 0s for those parameters when setting
     # homing parameter the stage goes the wrong way and runs itself into
     # the other end, causing an error condition.
     #
     # To get around this, and the fact the correct values don't seem to be
     # documented, we get the current parameters, assuming they are correct,
-    # and then modify only the velocity and offset component, then send it 
+    # and then modify only the velocity and offset component, then send it
     # back to the controller.
     curparams = list(self.request_home_params())
 
@@ -550,7 +552,7 @@ class ControllerStatus(object):
   This class encapsulate the controller status, which includes its position,
   velocity, and various flags.
 
-  The position and velocity properties will return realworld values of 
+  The position and velocity properties will return realworld values of
   mm and mm/s respectively.
   """
   def __init__(self, controller, statusbytestring):
