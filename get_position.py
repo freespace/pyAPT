@@ -31,7 +31,7 @@ def main(args):
       with pyAPT.MTS50(serial_number=con[2]) as con:
         print('\tPosition (mm) = %.2f [enc:%d]'%(con.position(), con.position(raw=True)))
 
-      return 0
+    return 0
   else:
     print('\tNo APT controllers found. Maybe you need to specify a PID')
     return 1
